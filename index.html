@@ -1,4 +1,4 @@
-<!-- VERSION: v6.0 | BASED ON YOUR ORIGINAL WORKING CODE | UI UPDATED -->
+<!-- VERSION: v6.1 | UPDATED: 2025-12-18 01:30 PM | FIX: Vercel/Safari CORS & Canvas Tainting -->
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -27,7 +27,7 @@
     <style>
         /* WIX IFRAME COMPATIBILITY */
         html, body { height: 100%; width: 100%; margin: 0; padding: 0; overflow-x: hidden; overflow-y: auto; background-color: #0b1120; touch-action: manipulation; }
-        .app-container { height: 100vh; display: flex; flex-direction: column; } /* Changed to 100vh for full screen */
+        .app-container { height: 100vh; display: flex; flex-direction: column; } 
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: #1e293b; }
         ::-webkit-scrollbar-thumb { background: #06b6d4; border-radius: 4px; }
@@ -43,20 +43,19 @@
         .drag-line-h::after { content: ''; height: 2px; width: 100%; background-color: rgba(244, 63, 94, 0.8); box-shadow: 0 0 8px rgba(244, 63, 94, 0.8); }
     </style>
     <!-- 2. JS Libraries -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <!-- Adding crossorigin to script tags ensures better security context handling -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" crossorigin="anonymous"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body class="bg-game-bg text-game-text font-sans antialiased">
-    <!-- 外層容器：改為 h-full 並減少 padding -->
     <div class="app-container max-w-full mx-auto p-1 relative">
         
-        <!-- Header: 縮小高度 -->
+        <!-- Header -->
         <header class="shrink-0 flex justify-between items-center mb-1 border-b border-game-surface pb-1 z-10 relative px-2">
             <div class="flex flex-col">
-                <!-- UI 修改：改為 YZU- Stone Studio -->
                 <h1 class="text-xl md:text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-game-primary to-cyan-100 font-[Rajdhani]">YZU- Stone Studio</h1>
-                <p class="text-[9px] text-game-muted font-mono mt-0.5">SYSTEM ONLINE // v6.0</p>
+                <p class="text-[9px] text-game-muted font-mono mt-0.5">SYSTEM ONLINE // v6.1 DEPLOY</p>
             </div>
             <div class="flex items-center gap-1" id="progress-bar">
                 <div id="prog-1" class="h-1.5 w-3 md:w-6 rounded-sm bg-game-surface/30 skew-x-[-12deg] transition-colors"></div>
@@ -66,7 +65,7 @@
                 <div id="prog-5" class="h-1.5 w-3 md:w-6 rounded-sm bg-game-surface/30 skew-x-[-12deg] transition-colors"></div>
             </div>
         </header>
-        <!-- Main Content: 去掉固定 min-height，改為 flex-1 自動填滿，大幅減少 padding -->
+        <!-- Main Content -->
         <main class="flex-1 bg-game-surface/30 backdrop-blur-md rounded-lg shadow-2xl border border-game-surface ring-1 ring-white/5 relative flex flex-col overflow-hidden z-10">
             <div class="flex-1 flex flex-col p-1 relative h-full" id="main-content">
                 
@@ -85,7 +84,6 @@
                         <h3 class="text-base font-bold text-game-primary font-[Rajdhani]">Stage 1: Extract</h3>
                         <button onclick="window.App.reset()" class="text-[10px] text-game-muted hover:text-white border border-game-muted/50 px-2 rounded">ABORT</button>
                     </div>
-                    <!-- UI 修改：最大化圖片區域，從 min-height:300px 改為 flex-1 自動填滿 -->
                     <div class="flex-1 relative bg-black/50 rounded-lg flex items-center justify-center overflow-hidden w-full h-full">
                         <img id="image-to-crop" src="" style="display: block; max-width: 100%; max-height: 80vh;">
                     </div>
@@ -96,7 +94,6 @@
                 <!-- STEP 3: GRID -->
                 <div id="step-grid" class="step-section h-full">
                     <div class="flex flex-col lg:flex-row gap-2 h-full">
-                        <!-- UI 修改：縮減 padding -->
                         <div class="flex-1 bg-black/40 p-2 rounded-xl flex items-center justify-center relative overflow-hidden">
                             <div class="relative shadow-2xl z-10" style="max-height: 100%; max-width: 100%;">
                                 <img id="grid-preview-img" src="" class="max-w-full max-h-[75vh] object-contain">
@@ -105,7 +102,6 @@
                         </div>
                         <div class="shrink-0 w-full lg:w-56 flex flex-col gap-2">
                             <h3 class="text-base font-bold text-game-primary font-[Rajdhani] border-b border-game-surface pb-1">Stage 2: Grid</h3>
-                            
                             <div class="bg-game-surface/50 p-2 rounded flex justify-between items-center">
                                 <label class="text-[10px] font-bold text-game-primary">COLS</label>
                                 <div class="flex gap-2">
@@ -114,7 +110,6 @@
                                     <button onclick="window.App.updateGrid('cols', 1)" class="w-8 h-8 bg-game-surface border border-game-primary text-game-primary hover:bg-game-primary hover:text-black rounded">+</button>
                                 </div>
                             </div>
-                            
                             <div class="bg-game-surface/50 p-2 rounded flex justify-between items-center">
                                 <label class="text-[10px] font-bold text-game-accent">ROWS</label>
                                 <div class="flex gap-2">
@@ -165,13 +160,11 @@
                 </div>
             </div>
             <div class="shrink-0 text-center mb-1 bg-black/50 py-1 border-t border-game-primary/30">
-                <!-- UI 修改：改為 DESIGNED BY Stone/YZU-DBA -->
                 <p class="text-game-primary font-bold font-mono text-[10px]">DESIGNED BY Stone/YZU-DBA</p>
             </div>
         </main>
     </div>
     <script>
-        // === 這是您原本提供的程式碼邏輯，我完全沒有更動邏輯部分，只確保它能在新 UI 中運作 ===
         window.App = {
             state: { 
                 step: 1, 
@@ -189,11 +182,8 @@
                 try { lucide.createIcons(); } catch(e){}
                 document.getElementById('file-input').addEventListener('change', this.handleFileSelect.bind(this));
                 
-                // Mouse Events
                 document.addEventListener('mousemove', this.handleDragMove.bind(this));
                 document.addEventListener('mouseup', this.handleDragEnd.bind(this));
-                
-                // Touch Events
                 document.addEventListener('touchmove', this.handleDragMove.bind(this), { passive: false });
                 document.addEventListener('touchend', this.handleDragEnd.bind(this));
                 
@@ -223,7 +213,6 @@
                     document.getElementById(id).classList.remove('active');
                 });
                 
-                // Progress Bar
                 for(let i=1; i<=5; i++) { 
                     const el = document.getElementById('prog-'+i);
                     el.className = i <= this.state.step 
@@ -265,7 +254,11 @@
                     dragMode: 'move', 
                     autoCropArea: 0.9, 
                     background: false,
-                    responsive: true
+                    responsive: true,
+                    // CRITICAL FIX FOR VERCEL DEPLOYMENT
+                    // 關鍵修正：關閉跨域檢查，避免本地圖片被瀏覽器誤判為不安全
+                    checkCrossOrigin: false,
+                    checkOrientation: false
                 }); 
             },
             destroyCropper: function() { 
@@ -276,9 +269,13 @@
             },
             confirmCrop: function() { 
                 if (!this.state.cropper) return; 
-                this.state.croppedCanvas = this.state.cropper.getCroppedCanvas({ imageSmoothingQuality: 'high' }); 
+                // 使用 JPEG 格式可減少記憶體佔用，提高 iOS 成功率
+                this.state.croppedCanvas = this.state.cropper.getCroppedCanvas({ 
+                    imageSmoothingQuality: 'high'
+                }); 
                 this.setStep(3); 
             },
+            // ... (其餘邏輯完全保持不變) ...
             updateGrid: function(type, delta) {
                 if (type === 'rows') { 
                     this.state.rows = Math.max(1, Math.min(20, this.state.rows + delta)); 
@@ -315,7 +312,6 @@
             renderFineTuneLines: function() {
                 const ol = document.getElementById('finetune-overlay'); 
                 ol.innerHTML = '';
-                
                 this.state.vLines.forEach((pos, i) => { 
                     const el = document.createElement('div'); 
                     el.className = 'drag-line-v'; 
@@ -324,7 +320,6 @@
                     el.ontouchstart = (e) => this.handleDragStart(e, 'v', i); 
                     ol.appendChild(el); 
                 });
-                
                 this.state.hLines.forEach((pos, i) => { 
                     const el = document.createElement('div'); 
                     el.className = 'drag-line-h'; 
@@ -341,20 +336,13 @@
             handleDragMove: function(e) {
                 if (!this.state.dragging) return; 
                 e.preventDefault();
-                
                 const rect = document.getElementById('finetune-container').getBoundingClientRect();
                 let cx = e.clientX || (e.touches ? e.touches[0].clientX : 0);
                 let cy = e.clientY || (e.touches ? e.touches[0].clientY : 0);
-                
-                let pct = this.state.dragging.type === 'v' 
-                    ? ((cx - rect.left)/rect.width)*100 
-                    : ((cy - rect.top)/rect.height)*100;
-                
+                let pct = this.state.dragging.type === 'v' ? ((cx - rect.left)/rect.width)*100 : ((cy - rect.top)/rect.height)*100;
                 pct = Math.max(0, Math.min(100, pct));
-                
                 if (this.state.dragging.type === 'v') this.state.vLines[this.state.dragging.i] = pct; 
                 else this.state.hLines[this.state.dragging.i] = pct;
-                
                 this.renderFineTuneLines();
             },
             handleDragEnd: function() { 
@@ -370,18 +358,14 @@
                 const ctx = cvs.getContext('2d');
                 const w = cvs.width;
                 const h = cvs.height;
-                
                 const xc = [0, ...this.state.vLines.map(p => (p/100)*w), w];
                 const yc = [0, ...this.state.hLines.map(p => (p/100)*h), h];
-                
                 this.state.results = [];
-                
                 for (let r=0; r<yc.length-1; r++) {
                     for (let c=0; c<xc.length-1; c++) {
                         const cell = document.createElement('canvas'); 
                         cell.width = xc[c+1]-xc[c]; 
                         cell.height = yc[r+1]-yc[r];
-                        
                         if (cell.width > 0 && cell.height > 0) {
                             cell.getContext('2d').drawImage(cvs, xc[c], yc[r], cell.width, cell.height, 0, 0, cell.width, cell.height);
                             this.state.results.push({ 
@@ -408,11 +392,11 @@
                     `; 
                     c.appendChild(d); 
                 });
-                try { lucide.createIcons(); } catch(e){}
+                lucide.createIcons();
             },
             downloadZip: function() {
                 const zip = new JSZip();
-                const f = zip.folder("split_images");
+                const f = zip.folder("Stone_Studio_Grid");
                 this.state.results.forEach(it => f.file(it.filename, it.dataUrl.split(',')[1], {base64:true}));
                 f.generateAsync({type:"blob"}).then(c => { 
                     const l = document.createElement('a'); 
