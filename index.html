@@ -1,503 +1,445 @@
-<!-- VERSION: v8.0 | UPDATED: 2025-12-18 02:20 PM | FIX: Syntax & iOS Input Overlay -->
-<!DOCTYPE html>
-<html lang="zh-TW">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>YZU- Stone Studio</title>
+<!-- Loading Screen -->
+<div id="loading-overlay">
+    <div class="spinner mb-4"></div>
+    <div id="loading-text" class="text-game-primary font-mono text-sm tracking-widest">PROCESSING...</div>
+</div>
+<div class="app-container max-w-full mx-auto p-1 relative">
     
-    <!-- 1. CSS Framework & Libraries -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css" />
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;800&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
-    <!-- Tailwind Configuration -->
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            colors: {
-              game: { bg: '#0b1120', surface: '#1e293b', primary: '#06b6d4', accent: '#f43f5e', text: '#f1f5f9', muted: '#94a3b8' }
-            },
-            fontFamily: { sans: ['"Rajdhani"', '"Nunito"', 'sans-serif'], mono: ['"Fira Code"', 'monospace'] },
-            boxShadow: { 'neon': '0 0 10px rgba(6, 182, 212, 0.5)', 'neon-red': '0 0 10px rgba(244, 63, 94, 0.5)' }
-          }
-        }
-      }
-    </script>
-    <style>
-        /* WIX IFRAME COMPATIBILITY */
-        html, body { height: 100%; width: 100%; margin: 0; padding: 0; overflow-x: hidden; overflow-y: auto; background-color: #0b1120; touch-action: manipulation; }
-        .app-container { height: 100vh; display: flex; flex-direction: column; } 
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #1e293b; }
-        ::-webkit-scrollbar-thumb { background: #06b6d4; border-radius: 4px; }
-        
-        .step-section { display: none; flex-direction: column; flex: 1; height: 100%; animation: fadeIn 0.3s ease-in-out; }
-        .step-section.active { display: flex; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        
-        /* Drag Lines */
-        .drag-line-v { position: absolute; top: 0; bottom: 0; width: 30px; margin-left: -15px; cursor: col-resize; z-index: 20; display: flex; justify-content: center; }
-        .drag-line-v::after { content: ''; width: 2px; height: 100%; background-color: rgba(6, 182, 212, 0.8); box-shadow: 0 0 8px rgba(6, 182, 212, 0.8); }
-        .drag-line-h { position: absolute; left: 0; right: 0; height: 30px; margin-top: -15px; cursor: row-resize; z-index: 20; display: flex; flex-direction: column; justify-content: center; }
-        .drag-line-h::after { content: ''; height: 2px; width: 100%; background-color: rgba(244, 63, 94, 0.8); box-shadow: 0 0 8px rgba(244, 63, 94, 0.8); }
-        
-        /* Loading Overlay */
-        #loading-overlay { position: fixed; inset: 0; background: rgba(11, 17, 32, 0.95); z-index: 9999; display: none; justify-content: center; items-center; flex-direction: column; }
-        .spinner { width: 40px; height: 40px; border: 4px solid #1e293b; border-top: 4px solid #06b6d4; border-radius: 50%; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-    </style>
-    <!-- 2. JS Libraries -->
-    <script src="https://unpkg.com/cropperjs@1.6.1/dist/cropper.min.js"></script>
-    <script src="https://unpkg.com/jszip@3.10.1/dist/jszip.min.js"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-</head>
-<body class="bg-game-bg text-game-text font-sans antialiased">
-    
-    <!-- Loading Screen -->
-    <div id="loading-overlay">
-        <div class="spinner mb-4"></div>
-        <div id="loading-text" class="text-game-primary font-mono text-sm tracking-widest">PROCESSING...</div>
-    </div>
-    <div class="app-container max-w-full mx-auto p-1 relative">
-        
-        <!-- Header -->
-        <header class="shrink-0 flex justify-between items-center mb-1 border-b border-game-surface pb-1 z-10 relative px-2">
-            <div class="flex flex-col">
-                <h1 class="text-xl md:text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-game-primary to-cyan-100 font-[Rajdhani]">YZU- Stone Studio</h1>
-                <p class="text-[9px] text-game-muted font-mono mt-0.5">SYSTEM ONLINE // v8.0 PERPLEXITY FIX</p>
+    <!-- Header -->
+    <header class="shrink-0 flex justify-between items-center mb-1 border-b border-game-surface pb-1 z-10 relative px-2">
+        <div class="flex flex-col">
+            <h1 class="text-xl md:text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-game-primary to-cyan-100 font-[Rajdhani]">YZU- Stone Studio</h1>
+            <p class="text-[9px] text-game-muted font-mono mt-0.5">SYSTEM ONLINE // v8.0 PERPLEXITY FIX</p>
+        </div>
+        <div class="flex items-center gap-1" id="progress-bar">
+            <div id="prog-1" class="h-1.5 w-3 md:w-6 rounded-sm bg-game-surface/30 skew-x-[-12deg] transition-colors"></div>
+            <div id="prog-2" class="h-1.5 w-3 md:w-6 rounded-sm bg-game-surface/30 skew-x-[-12deg] transition-colors"></div>
+            <div id="prog-3" class="h-1.5 w-3 md:w-6 rounded-sm bg-game-surface/30 skew-x-[-12deg] transition-colors"></div>
+            <div id="prog-4" class="h-1.5 w-3 md:w-6 rounded-sm bg-game-surface/30 skew-x-[-12deg] transition-colors"></div>
+            <div id="prog-5" class="h-1.5 w-3 md:w-6 rounded-sm bg-game-surface/30 skew-x-[-12deg] transition-colors"></div>
+        </div>
+    </header>
+    <!-- Main Content -->
+    <main class="flex-1 bg-game-surface/30 backdrop-blur-md rounded-lg shadow-2xl border border-game-surface ring-1 ring-white/5 relative flex flex-col overflow-hidden z-10">
+        <div class="flex-1 flex flex-col p-1 relative h-full" id="main-content">
+            
+            <!-- STEP 1: UPLOAD (FIXED: Transparent Overlay Method) -->
+            <div id="step-upload" class="step-section active justify-center items-center h-full">
+                <!-- 相對定位容器 -->
+                <div class="relative flex flex-col items-center justify-center w-full h-full border-2 border-dashed border-game-primary/30 rounded-xl p-4 text-center bg-game-surface/20 hover:bg-game-surface/40 transition-colors group">
+                    
+                    <!-- 視覺內容 (被 Input 覆蓋，不可點擊) -->
+                    <div class="pointer-events-none flex flex-col items-center">
+                        <div class="w-16 h-16 mb-4 flex items-center justify-center border-2 border-game-primary rounded-xl shadow-neon group-hover:scale-110 transition-transform">
+                            <i data-lucide="scan-line" class="w-8 h-8 text-game-primary"></i>
+                        </div>
+                        <h2 class="text-xl font-bold mb-1 font-[Rajdhani]">INITIALIZE UPLOAD</h2>
+                        <p class="text-xs text-game-muted mb-4">Auto-Optimize for iPhone</p>
+                        <div class="font-bold py-2 px-6 rounded-lg bg-game-primary text-black flex items-center gap-2 mt-2 shadow-lg shadow-cyan-500/20">
+                            <i data-lucide="upload" class="w-4 h-4"></i> SELECT FILE
+                        </div>
+                    </div>
+                    <!-- 真正的 Input: 透明覆蓋整個父容器，保證手指一定點得到 -->
+                    <input 
+                        type="file" 
+                        id="file-input" 
+                        accept="image/png, image/jpeg, image/jpg" 
+                        class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-50"
+                        onchange="window.App.handleFileSelect(this)"
+                    >
+                </div>
             </div>
-            <div class="flex items-center gap-1" id="progress-bar">
-                <div id="prog-1" class="h-1.5 w-3 md:w-6 rounded-sm bg-game-surface/30 skew-x-[-12deg] transition-colors"></div>
-                <div id="prog-2" class="h-1.5 w-3 md:w-6 rounded-sm bg-game-surface/30 skew-x-[-12deg] transition-colors"></div>
-                <div id="prog-3" class="h-1.5 w-3 md:w-6 rounded-sm bg-game-surface/30 skew-x-[-12deg] transition-colors"></div>
-                <div id="prog-4" class="h-1.5 w-3 md:w-6 rounded-sm bg-game-surface/30 skew-x-[-12deg] transition-colors"></div>
-                <div id="prog-5" class="h-1.5 w-3 md:w-6 rounded-sm bg-game-surface/30 skew-x-[-12deg] transition-colors"></div>
+            <!-- STEP 2: CROP -->
+            <div id="step-crop" class="step-section h-full">
+                <div class="shrink-0 flex justify-between border-b border-game-surface pb-1 mb-1 px-1">
+                    <h3 class="text-base font-bold text-game-primary font-[Rajdhani]">Stage 1: Extract</h3>
+                    <button onclick="window.App.reset()" class="text-[10px] text-game-muted hover:text-white border border-game-muted/50 px-2 rounded">ABORT</button>
+                </div>
+                <div class="flex-1 relative bg-black/50 rounded-lg flex items-center justify-center overflow-hidden w-full h-full">
+                    <img id="image-to-crop" src="" style="display: block; max-width: 100%; max-height: 80vh;">
+                </div>
+                <div class="shrink-0 flex justify-end pt-2 px-1">
+                    <button onclick="window.App.confirmCrop()" class="font-bold py-2 px-8 rounded-lg bg-game-primary text-black hover:bg-cyan-400 transition-colors shadow-neon text-sm tracking-widest">CONFIRM ZONE</button>
+                </div>
             </div>
-        </header>
-        <!-- Main Content -->
-        <main class="flex-1 bg-game-surface/30 backdrop-blur-md rounded-lg shadow-2xl border border-game-surface ring-1 ring-white/5 relative flex flex-col overflow-hidden z-10">
-            <div class="flex-1 flex flex-col p-1 relative h-full" id="main-content">
-                
-                <!-- STEP 1: UPLOAD (FIXED: Transparent Overlay Method) -->
-                <div id="step-upload" class="step-section active justify-center items-center h-full">
-                    <!-- 相對定位容器 -->
-                    <div class="relative flex flex-col items-center justify-center w-full h-full border-2 border-dashed border-game-primary/30 rounded-xl p-4 text-center bg-game-surface/20 hover:bg-game-surface/40 transition-colors group">
+            <!-- STEP 3: GRID -->
+            <div id="step-grid" class="step-section h-full">
+                <div class="flex flex-col lg:flex-row gap-2 h-full">
+                    <div class="flex-1 bg-black/40 p-2 rounded-xl flex items-center justify-center relative overflow-hidden">
+                        <div class="relative shadow-2xl z-10" style="max-height: 100%; max-width: 100%;">
+                            <img id="grid-preview-img" src="" class="max-w-full max-h-[75vh] object-contain">
+                            <div id="grid-overlay" class="absolute inset-0 border border-game-primary/50 pointer-events-none z-20"></div>
+                        </div>
+                    </div>
+                    <div class="shrink-0 w-full lg:w-56 flex flex-col gap-2">
+                        <h3 class="text-base font-bold text-game-primary font-[Rajdhani] border-b border-game-surface pb-1">Stage 2: Grid</h3>
+                        <div class="bg-game-surface/50 p-2 rounded flex justify-between items-center">
+                            <label class="text-[10px] font-bold text-game-primary">COLS</label>
+                            <div class="flex gap-2">
+                                <button onclick="window.App.updateGrid('cols', -1)" class="w-8 h-8 bg-game-surface border border-game-primary text-game-primary hover:bg-game-primary hover:text-black rounded">-</button>
+                                <span id="display-cols" class="font-mono text-xl text-white w-4 text-center">2</span>
+                                <button onclick="window.App.updateGrid('cols', 1)" class="w-8 h-8 bg-game-surface border border-game-primary text-game-primary hover:bg-game-primary hover:text-black rounded">+</button>
+                            </div>
+                        </div>
+                        <div class="bg-game-surface/50 p-2 rounded flex justify-between items-center">
+                            <label class="text-[10px] font-bold text-game-accent">ROWS</label>
+                            <div class="flex gap-2">
+                                <button onclick="window.App.updateGrid('rows', -1)" class="w-8 h-8 bg-game-surface border border-game-accent text-game-accent hover:bg-game-accent hover:text-white rounded">-</button>
+                                <span id="display-rows" class="font-mono text-xl text-white w-4 text-center">2</span>
+                                <button onclick="window.App.updateGrid('rows', 1)" class="w-8 h-8 bg-game-surface border border-game-accent text-game-accent hover:bg-game-accent hover:text-white rounded">+</button>
+                            </div>
+                        </div>
+                        <div class="flex gap-2 pt-1 mt-auto">
+                            <button onclick="window.App.setStep(2)" class="flex-1 py-2 px-3 border border-game-primary text-game-primary text-xs font-bold hover:bg-game-primary/20 rounded">BACK</button>
+                            <button onclick="window.App.goToFineTune()" class="flex-[2] py-2 px-3 bg-game-primary text-black text-xs font-bold hover:bg-cyan-400 rounded shadow-neon">CALIBRATE</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- STEP 4: FINE TUNE -->
+            <div id="step-finetune" class="step-section h-full">
+                <div class="shrink-0 border-b border-game-surface pb-1 mb-1 px-1">
+                    <h3 class="text-base font-bold text-game-primary font-[Rajdhani]">Stage 3: Targeting</h3>
+                    <p class="text-[10px] text-game-muted">Drag lines to adjust cut positions.</p>
+                </div>
+                <div class="flex-1 bg-black/50 rounded-lg flex items-center justify-center p-1 overflow-hidden touch-none select-none">
+                    <div id="finetune-container" class="relative inline-block">
+                        <img id="finetune-img" src="" class="block opacity-90 rounded-sm select-none" style="max-height: 80vh; max-width: 100%; pointer-events: none;">
+                        <div id="finetune-overlay" class="absolute inset-0 z-10"></div>
+                    </div>
+                </div>
+                <div class="shrink-0 flex gap-2 pt-2 px-1">
+                    <button onclick="window.App.setStep(3)" class="flex-1 py-2 px-3 border border-game-primary text-game-primary text-xs font-bold hover:bg-game-primary/20 rounded">BACK</button>
+                    <button onclick="window.App.processSplit()" class="flex-[2] py-2 px-3 bg-game-accent text-white text-xs font-bold shadow-neon-red hover:bg-rose-600 rounded tracking-widest">EXECUTE CUT</button>
+                </div>
+            </div>
+            <!-- STEP 5: RESULT -->
+            <div id="step-result" class="step-section h-full">
+                <div class="shrink-0 flex justify-between items-end mb-2 border-b border-game-surface pb-2 px-1">
+                    <h2 class="text-xl font-bold font-[Rajdhani]">MISSION COMPLETE</h2>
+                    <div class="flex gap-2">
+                        <button onclick="window.open('https://www.threads.net/@iistone_1', '_blank')" class="h-8 px-3 bg-game-surface border text-game-text text-xs hover:bg-white hover:text-black rounded">Help</button>
+                        <button onclick="window.App.downloadZip()" class="h-8 px-3 bg-game-primary text-black text-xs font-bold hover:bg-cyan-400 rounded flex items-center gap-1"><i data-lucide="archive" class="w-3 h-3"></i> ZIP</button>
+                    </div>
+                </div>
+                <div class="flex-1 overflow-y-auto p-2 bg-black/30 rounded-xl">
+                    <div id="results-container" class="grid grid-cols-2 md:grid-cols-4 gap-2"></div>
+                </div>
+                <div class="shrink-0 flex justify-center pt-2">
+                    <button onclick="window.App.reset()" class="w-full md:w-auto py-3 px-8 border border-yellow-400 text-yellow-400 font-bold hover:bg-yellow-400 hover:text-black transition-colors rounded">START NEW IMAGE</button>
+                </div>
+            </div>
+        </div>
+        <div class="shrink-0 text-center mb-1 bg-black/50 py-1 border-t border-game-primary/30">
+            <p class="text-game-primary font-bold font-mono text-[10px]">DESIGNED BY Stone/YZU-DBA</p>
+        </div>
+    </main>
+</div>
+<script>
+    window.App = {
+        state: { 
+            step: 1, 
+            originalImage: null, 
+            cropper: null, 
+            croppedCanvas: null, 
+            rows: 2, 
+            cols: 2, 
+            vLines: [], 
+            hLines: [], 
+            dragging: null, 
+            results: [] 
+        },
+        init: function() {
+            try { lucide.createIcons(); } catch(e){}
+            
+            // Mouse Events
+            document.addEventListener('mousemove', this.handleDragMove.bind(this));
+            document.addEventListener('mouseup', this.handleDragEnd.bind(this));
+            
+            // Touch Events
+            document.addEventListener('touchmove', this.handleDragMove.bind(this), { passive: false });
+            document.addEventListener('touchend', this.handleDragEnd.bind(this));
+            
+            this.renderStep();
+        },
+        toggleLoading: function(show, txt) {
+            const el = document.getElementById('loading-overlay');
+            if(txt) document.getElementById('loading-text').innerText = txt;
+            el.style.display = show ? 'flex' : 'none';
+        },
+        handleFileSelect: function(inputElement) {
+            const file = inputElement.files[0];
+            if (!file) return;
+            // Reset input value so same file can be selected again if needed
+            inputElement.value = '';
+            this.toggleLoading(true, "OPTIMIZING...");
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+                const img = new Image();
+                img.onload = () => {
+                    // FIX: Downscale large images for iOS memory safety
+                    const MAX_SIZE = 2500;
+                    let w = img.width;
+                    let h = img.height;
+                    if (w > MAX_SIZE || h > MAX_SIZE) {
+                        if (w > h) { h = Math.round((h * MAX_SIZE) / w); w = MAX_SIZE; }
+                        else { w = Math.round((w * MAX_SIZE) / h); h = MAX_SIZE; }
                         
-                        <!-- 視覺內容 (被 Input 覆蓋，不可點擊) -->
-                        <div class="pointer-events-none flex flex-col items-center">
-                            <div class="w-16 h-16 mb-4 flex items-center justify-center border-2 border-game-primary rounded-xl shadow-neon group-hover:scale-110 transition-transform">
-                                <i data-lucide="scan-line" class="w-8 h-8 text-game-primary"></i>
-                            </div>
-                            <h2 class="text-xl font-bold mb-1 font-[Rajdhani]">INITIALIZE UPLOAD</h2>
-                            <p class="text-xs text-game-muted mb-4">Auto-Optimize for iPhone</p>
-                            <div class="font-bold py-2 px-6 rounded-lg bg-game-primary text-black flex items-center gap-2 mt-2 shadow-lg shadow-cyan-500/20">
-                                <i data-lucide="upload" class="w-4 h-4"></i> SELECT FILE
-                            </div>
-                        </div>
-                        <!-- 真正的 Input: 透明覆蓋整個父容器，保證手指一定點得到 -->
-                        <input 
-                            type="file" 
-                            id="file-input" 
-                            accept="image/png, image/jpeg, image/jpg" 
-                            class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-50"
-                            onchange="window.App.handleFileSelect(this)"
-                        >
-                    </div>
-                </div>
-                <!-- STEP 2: CROP -->
-                <div id="step-crop" class="step-section h-full">
-                    <div class="shrink-0 flex justify-between border-b border-game-surface pb-1 mb-1 px-1">
-                        <h3 class="text-base font-bold text-game-primary font-[Rajdhani]">Stage 1: Extract</h3>
-                        <button onclick="window.App.reset()" class="text-[10px] text-game-muted hover:text-white border border-game-muted/50 px-2 rounded">ABORT</button>
-                    </div>
-                    <div class="flex-1 relative bg-black/50 rounded-lg flex items-center justify-center overflow-hidden w-full h-full">
-                        <img id="image-to-crop" src="" style="display: block; max-width: 100%; max-height: 80vh;">
-                    </div>
-                    <div class="shrink-0 flex justify-end pt-2 px-1">
-                        <button onclick="window.App.confirmCrop()" class="font-bold py-2 px-8 rounded-lg bg-game-primary text-black hover:bg-cyan-400 transition-colors shadow-neon text-sm tracking-widest">CONFIRM ZONE</button>
-                    </div>
-                </div>
-                <!-- STEP 3: GRID -->
-                <div id="step-grid" class="step-section h-full">
-                    <div class="flex flex-col lg:flex-row gap-2 h-full">
-                        <div class="flex-1 bg-black/40 p-2 rounded-xl flex items-center justify-center relative overflow-hidden">
-                            <div class="relative shadow-2xl z-10" style="max-height: 100%; max-width: 100%;">
-                                <img id="grid-preview-img" src="" class="max-w-full max-h-[75vh] object-contain">
-                                <div id="grid-overlay" class="absolute inset-0 border border-game-primary/50 pointer-events-none z-20"></div>
-                            </div>
-                        </div>
-                        <div class="shrink-0 w-full lg:w-56 flex flex-col gap-2">
-                            <h3 class="text-base font-bold text-game-primary font-[Rajdhani] border-b border-game-surface pb-1">Stage 2: Grid</h3>
-                            <div class="bg-game-surface/50 p-2 rounded flex justify-between items-center">
-                                <label class="text-[10px] font-bold text-game-primary">COLS</label>
-                                <div class="flex gap-2">
-                                    <button onclick="window.App.updateGrid('cols', -1)" class="w-8 h-8 bg-game-surface border border-game-primary text-game-primary hover:bg-game-primary hover:text-black rounded">-</button>
-                                    <span id="display-cols" class="font-mono text-xl text-white w-4 text-center">2</span>
-                                    <button onclick="window.App.updateGrid('cols', 1)" class="w-8 h-8 bg-game-surface border border-game-primary text-game-primary hover:bg-game-primary hover:text-black rounded">+</button>
-                                </div>
-                            </div>
-                            <div class="bg-game-surface/50 p-2 rounded flex justify-between items-center">
-                                <label class="text-[10px] font-bold text-game-accent">ROWS</label>
-                                <div class="flex gap-2">
-                                    <button onclick="window.App.updateGrid('rows', -1)" class="w-8 h-8 bg-game-surface border border-game-accent text-game-accent hover:bg-game-accent hover:text-white rounded">-</button>
-                                    <span id="display-rows" class="font-mono text-xl text-white w-4 text-center">2</span>
-                                    <button onclick="window.App.updateGrid('rows', 1)" class="w-8 h-8 bg-game-surface border border-game-accent text-game-accent hover:bg-game-accent hover:text-white rounded">+</button>
-                                </div>
-                            </div>
-                            <div class="flex gap-2 pt-1 mt-auto">
-                                <button onclick="window.App.setStep(2)" class="flex-1 py-2 px-3 border border-game-primary text-game-primary text-xs font-bold hover:bg-game-primary/20 rounded">BACK</button>
-                                <button onclick="window.App.goToFineTune()" class="flex-[2] py-2 px-3 bg-game-primary text-black text-xs font-bold hover:bg-cyan-400 rounded shadow-neon">CALIBRATE</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <!-- STEP 4: FINE TUNE -->
-                <div id="step-finetune" class="step-section h-full">
-                    <div class="shrink-0 border-b border-game-surface pb-1 mb-1 px-1">
-                        <h3 class="text-base font-bold text-game-primary font-[Rajdhani]">Stage 3: Targeting</h3>
-                        <p class="text-[10px] text-game-muted">Drag lines to adjust cut positions.</p>
-                    </div>
-                    <div class="flex-1 bg-black/50 rounded-lg flex items-center justify-center p-1 overflow-hidden touch-none select-none">
-                        <div id="finetune-container" class="relative inline-block">
-                            <img id="finetune-img" src="" class="block opacity-90 rounded-sm select-none" style="max-height: 80vh; max-width: 100%; pointer-events: none;">
-                            <div id="finetune-overlay" class="absolute inset-0 z-10"></div>
-                        </div>
-                    </div>
-                    <div class="shrink-0 flex gap-2 pt-2 px-1">
-                        <button onclick="window.App.setStep(3)" class="flex-1 py-2 px-3 border border-game-primary text-game-primary text-xs font-bold hover:bg-game-primary/20 rounded">BACK</button>
-                        <button onclick="window.App.processSplit()" class="flex-[2] py-2 px-3 bg-game-accent text-white text-xs font-bold shadow-neon-red hover:bg-rose-600 rounded tracking-widest">EXECUTE CUT</button>
-                    </div>
-                </div>
-                <!-- STEP 5: RESULT -->
-                <div id="step-result" class="step-section h-full">
-                    <div class="shrink-0 flex justify-between items-end mb-2 border-b border-game-surface pb-2 px-1">
-                        <h2 class="text-xl font-bold font-[Rajdhani]">MISSION COMPLETE</h2>
-                        <div class="flex gap-2">
-                            <button onclick="window.open('https://www.threads.net/@iistone_1', '_blank')" class="h-8 px-3 bg-game-surface border text-game-text text-xs hover:bg-white hover:text-black rounded">Help</button>
-                            <button onclick="window.App.downloadZip()" class="h-8 px-3 bg-game-primary text-black text-xs font-bold hover:bg-cyan-400 rounded flex items-center gap-1"><i data-lucide="archive" class="w-3 h-3"></i> ZIP</button>
-                        </div>
-                    </div>
-                    <div class="flex-1 overflow-y-auto p-2 bg-black/30 rounded-xl">
-                        <div id="results-container" class="grid grid-cols-2 md:grid-cols-4 gap-2"></div>
-                    </div>
-                    <div class="shrink-0 flex justify-center pt-2">
-                        <button onclick="window.App.reset()" class="w-full md:w-auto py-3 px-8 border border-yellow-400 text-yellow-400 font-bold hover:bg-yellow-400 hover:text-black transition-colors rounded">START NEW IMAGE</button>
-                    </div>
-                </div>
-            </div>
-            <div class="shrink-0 text-center mb-1 bg-black/50 py-1 border-t border-game-primary/30">
-                <p class="text-game-primary font-bold font-mono text-[10px]">DESIGNED BY Stone/YZU-DBA</p>
-            </div>
-        </main>
-    </div>
-    <script>
-        window.App = {
-            state: { 
-                step: 1, 
-                originalImage: null, 
-                cropper: null, 
-                croppedCanvas: null, 
-                rows: 2, 
-                cols: 2, 
-                vLines: [], 
-                hLines: [], 
-                dragging: null, 
-                results: [] 
-            },
-            init: function() {
-                try { lucide.createIcons(); } catch(e){}
-                
-                // Mouse Events
-                document.addEventListener('mousemove', this.handleDragMove.bind(this));
-                document.addEventListener('mouseup', this.handleDragEnd.bind(this));
-                
-                // Touch Events
-                document.addEventListener('touchmove', this.handleDragMove.bind(this), { passive: false });
-                document.addEventListener('touchend', this.handleDragEnd.bind(this));
-                
-                this.renderStep();
-            },
-            toggleLoading: function(show, txt) {
-                const el = document.getElementById('loading-overlay');
-                if(txt) document.getElementById('loading-text').innerText = txt;
-                el.style.display = show ? 'flex' : 'none';
-            },
-            handleFileSelect: function(inputElement) {
-                const file = inputElement.files[0];
-                if (!file) return;
-                // Reset input value so same file can be selected again if needed
-                inputElement.value = '';
-                this.toggleLoading(true, "OPTIMIZING...");
-                const reader = new FileReader();
-                reader.onload = (evt) => {
-                    const img = new Image();
-                    img.onload = () => {
-                        // FIX: Downscale large images for iOS memory safety
-                        const MAX_SIZE = 2500;
-                        let w = img.width;
-                        let h = img.height;
-                        if (w > MAX_SIZE || h > MAX_SIZE) {
-                            if (w > h) { h = Math.round((h * MAX_SIZE) / w); w = MAX_SIZE; }
-                            else { w = Math.round((w * MAX_SIZE) / h); h = MAX_SIZE; }
-                            
-                            const canvas = document.createElement('canvas');
-                            canvas.width = w;
-                            canvas.height = h;
-                            const ctx = canvas.getContext('2d');
-                            ctx.drawImage(img, 0, 0, w, h);
-                            
-                            const resizedImg = new Image();
-                            resizedImg.onload = () => {
-                                this.state.originalImage = resizedImg;
-                                this.toggleLoading(false);
-                                this.setStep(2);
-                            };
-                            resizedImg.src = canvas.toDataURL('image/jpeg', 0.9);
-                        } else {
-                            this.state.originalImage = img;
+                        const canvas = document.createElement('canvas');
+                        canvas.width = w;
+                        canvas.height = h;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, w, h);
+                        
+                        const resizedImg = new Image();
+                        resizedImg.onload = () => {
+                            this.state.originalImage = resizedImg;
                             this.toggleLoading(false);
                             this.setStep(2);
-                        }
-                    };
-                    img.onerror = () => {
-                        alert("Image failed to load");
+                        };
+                        resizedImg.src = canvas.toDataURL('image/jpeg', 0.9);
+                    } else {
+                        this.state.originalImage = img;
                         this.toggleLoading(false);
-                    };
-                    img.src = evt.target.result;
-                };
-                reader.readAsDataURL(file);
-            },
-            setStep: function(n) { 
-                this.state.step = n; 
-                this.renderStep(); 
-            },
-            renderStep: function() {
-                ['step-upload', 'step-crop', 'step-grid', 'step-finetune', 'step-result'].forEach(id => {
-                    document.getElementById(id).classList.remove('active');
-                });
-                
-                for(let i=1; i<=5; i++) { 
-                    const el = document.getElementById('prog-'+i);
-                    el.className = i <= this.state.step 
-                        ? 'h-1.5 w-3 md:w-6 rounded-sm bg-game-primary shadow-neon skew-x-[-12deg] transition-colors' 
-                        : 'h-1.5 w-3 md:w-6 rounded-sm bg-game-surface/30 skew-x-[-12deg] transition-colors'; 
-                }
-                if (this.state.step === 1) { 
-                    document.getElementById('step-upload').classList.add('active'); 
-                    this.destroyCropper(); 
-                }
-                else if (this.state.step === 2) { 
-                    document.getElementById('step-crop').classList.add('active'); 
-                    const img = document.getElementById('image-to-crop');
-                    img.src = this.state.originalImage.src;
-                    setTimeout(() => this.initCropper(img), 100); 
-                }
-                else if (this.state.step === 3) { 
-                    document.getElementById('step-grid').classList.add('active'); 
-                    this.destroyCropper(); 
-                    this.updateGridOverlay(); 
-                    if (this.state.croppedCanvas) {
-                        document.getElementById('grid-preview-img').src = this.state.croppedCanvas.toDataURL(); 
+                        this.setStep(2);
                     }
-                }
-                else if (this.state.step === 4) { 
-                    document.getElementById('step-finetune').classList.add('active'); 
-                    this.initFineTune(); 
-                }
-                else if (this.state.step === 5) { 
-                    document.getElementById('step-result').classList.add('active'); 
-                    this.renderResults(); 
-                }
-                
-                setTimeout(() => { try { lucide.createIcons(); } catch(e){} }, 0);
-            },
-            initCropper: function(img) { 
-                this.destroyCropper(); 
-                this.state.cropper = new Cropper(img, { 
-                    viewMode: 1, 
-                    dragMode: 'move', 
-                    autoCropArea: 0.9, 
-                    background: false,
-                    responsive: true,
-                    checkCrossOrigin: false 
-                }); 
-            },
-            destroyCropper: function() { 
-                if (this.state.cropper) { 
-                    this.state.cropper.destroy(); 
-                    this.state.cropper = null; 
-                } 
-            },
-            confirmCrop: function() { 
-                if (!this.state.cropper) return; 
-                this.toggleLoading(true, "CROPPING...");
-                setTimeout(() => {
-                    this.state.croppedCanvas = this.state.cropper.getCroppedCanvas({ 
-                        imageSmoothingQuality: 'high' 
-                    }); 
+                };
+                img.onerror = () => {
+                    alert("Image failed to load");
                     this.toggleLoading(false);
-                    this.setStep(3); 
-                }, 50);
-            },
-            updateGrid: function(type, delta) {
-                if (type === 'rows') { 
-                    this.state.rows = Math.max(1, Math.min(20, this.state.rows + delta)); 
-                    document.getElementById('display-rows').innerText = this.state.rows; 
-                } else { 
-                    this.state.cols = Math.max(1, Math.min(20, this.state.cols + delta)); 
-                    document.getElementById('display-cols').innerText = this.state.cols; 
+                };
+                img.src = evt.target.result;
+            };
+            reader.readAsDataURL(file);
+        },
+        setStep: function(n) { 
+            this.state.step = n; 
+            this.renderStep(); 
+        },
+        renderStep: function() {
+            ['step-upload', 'step-crop', 'step-grid', 'step-finetune', 'step-result'].forEach(id => {
+                document.getElementById(id).classList.remove('active');
+            });
+            
+            for(let i=1; i<=5; i++) { 
+                const el = document.getElementById('prog-'+i);
+                el.className = i <= this.state.step 
+                    ? 'h-1.5 w-3 md:w-6 rounded-sm bg-game-primary shadow-neon skew-x-[-12deg] transition-colors' 
+                    : 'h-1.5 w-3 md:w-6 rounded-sm bg-game-surface/30 skew-x-[-12deg] transition-colors'; 
+            }
+            if (this.state.step === 1) { 
+                document.getElementById('step-upload').classList.add('active'); 
+                this.destroyCropper(); 
+            }
+            else if (this.state.step === 2) { 
+                document.getElementById('step-crop').classList.add('active'); 
+                const img = document.getElementById('image-to-crop');
+                img.src = this.state.originalImage.src;
+                setTimeout(() => this.initCropper(img), 100); 
+            }
+            else if (this.state.step === 3) { 
+                document.getElementById('step-grid').classList.add('active'); 
+                this.destroyCropper(); 
+                this.updateGridOverlay(); 
+                if (this.state.croppedCanvas) {
+                    document.getElementById('grid-preview-img').src = this.state.croppedCanvas.toDataURL(); 
                 }
-                this.updateGridOverlay();
-            },
-            updateGridOverlay: function() {
-                const ol = document.getElementById('grid-overlay'); 
-                ol.style.display = 'grid'; 
-                // FIX: Correct Template Literal Syntax
-                ol.style.gridTemplateColumns = repeat(${this.state.cols}, 1fr); 
-                ol.style.gridTemplateRows = repeat(${this.state.rows}, 1fr); 
-                ol.innerHTML = '';
-                for (let i=0; i < this.state.rows * this.state.cols; i++) { 
-                    const c = document.createElement('div'); 
-                    c.className = 'border border-game-primary/30'; 
-                    ol.appendChild(c); 
-                }
-            },
-            goToFineTune: function() {
-                this.state.vLines = []; 
-                this.state.hLines = [];
-                for (let i = 1; i < this.state.cols; i++) this.state.vLines.push((i / this.state.cols) * 100);
-                for (let i = 1; i < this.state.rows; i++) this.state.hLines.push((i / this.state.rows) * 100);
-                this.setStep(4);
-            },
-            initFineTune: function() { 
-                document.getElementById('finetune-img').src = this.state.croppedCanvas.toDataURL(); 
+            }
+            else if (this.state.step === 4) { 
+                document.getElementById('step-finetune').classList.add('active'); 
+                this.initFineTune(); 
+            }
+            else if (this.state.step === 5) { 
+                document.getElementById('step-result').classList.add('active'); 
+                this.renderResults(); 
+            }
+            
+            setTimeout(() => { try { lucide.createIcons(); } catch(e){} }, 0);
+        },
+        initCropper: function(img) { 
+            this.destroyCropper(); 
+            this.state.cropper = new Cropper(img, { 
+                viewMode: 1, 
+                dragMode: 'move', 
+                autoCropArea: 0.9, 
+                background: false,
+                responsive: true,
+                checkCrossOrigin: false 
+            }); 
+        },
+        destroyCropper: function() { 
+            if (this.state.cropper) { 
+                this.state.cropper.destroy(); 
+                this.state.cropper = null; 
+            } 
+        },
+        confirmCrop: function() { 
+            if (!this.state.cropper) return; 
+            this.toggleLoading(true, "CROPPING...");
+            setTimeout(() => {
+                this.state.croppedCanvas = this.state.cropper.getCroppedCanvas({ 
+                    imageSmoothingQuality: 'high' 
+                }); 
+                this.toggleLoading(false);
+                this.setStep(3); 
+            }, 50);
+        },
+        updateGrid: function(type, delta) {
+            if (type === 'rows') { 
+                this.state.rows = Math.max(1, Math.min(20, this.state.rows + delta)); 
+                document.getElementById('display-rows').innerText = this.state.rows; 
+            } else { 
+                this.state.cols = Math.max(1, Math.min(20, this.state.cols + delta)); 
+                document.getElementById('display-cols').innerText = this.state.cols; 
+            }
+            this.updateGridOverlay();
+        },
+        updateGridOverlay: function() {
+            const ol = document.getElementById('grid-overlay'); 
+            ol.style.display = 'grid'; 
+            // FIX: Correct Template Literal Syntax
+            ol.style.gridTemplateColumns = repeat(${this.state.cols}, 1fr); 
+            ol.style.gridTemplateRows = repeat(${this.state.rows}, 1fr); 
+            ol.innerHTML = '';
+            for (let i=0; i < this.state.rows * this.state.cols; i++) { 
+                const c = document.createElement('div'); 
+                c.className = 'border border-game-primary/30'; 
+                ol.appendChild(c); 
+            }
+        },
+        goToFineTune: function() {
+            this.state.vLines = []; 
+            this.state.hLines = [];
+            for (let i = 1; i < this.state.cols; i++) this.state.vLines.push((i / this.state.cols) * 100);
+            for (let i = 1; i < this.state.rows; i++) this.state.hLines.push((i / this.state.rows) * 100);
+            this.setStep(4);
+        },
+        initFineTune: function() { 
+            document.getElementById('finetune-img').src = this.state.croppedCanvas.toDataURL(); 
+            this.renderFineTuneLines(); 
+        },
+        renderFineTuneLines: function() {
+            const ol = document.getElementById('finetune-overlay'); 
+            ol.innerHTML = '';
+            
+            this.state.vLines.forEach((pos, i) => { 
+                const el = document.createElement('div'); 
+                el.className = 'drag-line-v'; 
+                el.style.left = pos + '%'; 
+                el.onmousedown = (e) => this.handleDragStart(e, 'v', i); 
+                el.ontouchstart = (e) => this.handleDragStart(e, 'v', i); 
+                ol.appendChild(el); 
+            });
+            
+            this.state.hLines.forEach((pos, i) => { 
+                const el = document.createElement('div'); 
+                el.className = 'drag-line-h'; 
+                el.style.top = pos + '%'; 
+                el.onmousedown = (e) => this.handleDragStart(e, 'h', i); 
+                el.ontouchstart = (e) => this.handleDragStart(e, 'h', i); 
+                ol.appendChild(el); 
+            });
+        },
+        handleDragStart: function(e, type, i) { 
+            e.preventDefault(); 
+            this.state.dragging = { type, i }; 
+        },
+        handleDragMove: function(e) {
+            if (!this.state.dragging) return; 
+            e.preventDefault();
+            
+            const rect = document.getElementById('finetune-container').getBoundingClientRect();
+            let cx = e.clientX || (e.touches ? e.touches[0].clientX : 0);
+            let cy = e.clientY || (e.touches ? e.touches[0].clientY : 0);
+            
+            let pct = this.state.dragging.type === 'v' 
+                ? ((cx - rect.left)/rect.width)*100 
+                : ((cy - rect.top)/rect.height)*100;
+            
+            pct = Math.max(0, Math.min(100, pct));
+            
+            if (this.state.dragging.type === 'v') this.state.vLines[this.state.dragging.i] = pct; 
+            else this.state.hLines[this.state.dragging.i] = pct;
+            
+            this.renderFineTuneLines();
+        },
+        handleDragEnd: function() { 
+            if (this.state.dragging) { 
+                this.state.dragging = null; 
+                this.state.vLines.sort((a,b)=>a-b); 
+                this.state.hLines.sort((a,b)=>a-b); 
                 this.renderFineTuneLines(); 
-            },
-            renderFineTuneLines: function() {
-                const ol = document.getElementById('finetune-overlay'); 
-                ol.innerHTML = '';
+            } 
+        },
+        processSplit: function() {
+            this.toggleLoading(true, "CUTTING...");
+            setTimeout(() => {
+                const cvs = this.state.croppedCanvas;
+                const ctx = cvs.getContext('2d');
+                const w = cvs.width;
+                const h = cvs.height;
                 
-                this.state.vLines.forEach((pos, i) => { 
-                    const el = document.createElement('div'); 
-                    el.className = 'drag-line-v'; 
-                    el.style.left = pos + '%'; 
-                    el.onmousedown = (e) => this.handleDragStart(e, 'v', i); 
-                    el.ontouchstart = (e) => this.handleDragStart(e, 'v', i); 
-                    ol.appendChild(el); 
-                });
+                const xc = [0, ...this.state.vLines.map(p => (p/100)*w), w];
+                const yc = [0, ...this.state.hLines.map(p => (p/100)*h), h];
                 
-                this.state.hLines.forEach((pos, i) => { 
-                    const el = document.createElement('div'); 
-                    el.className = 'drag-line-h'; 
-                    el.style.top = pos + '%'; 
-                    el.onmousedown = (e) => this.handleDragStart(e, 'h', i); 
-                    el.ontouchstart = (e) => this.handleDragStart(e, 'h', i); 
-                    ol.appendChild(el); 
-                });
-            },
-            handleDragStart: function(e, type, i) { 
-                e.preventDefault(); 
-                this.state.dragging = { type, i }; 
-            },
-            handleDragMove: function(e) {
-                if (!this.state.dragging) return; 
-                e.preventDefault();
+                this.state.results = [];
                 
-                const rect = document.getElementById('finetune-container').getBoundingClientRect();
-                let cx = e.clientX || (e.touches ? e.touches[0].clientX : 0);
-                let cy = e.clientY || (e.touches ? e.touches[0].clientY : 0);
-                
-                let pct = this.state.dragging.type === 'v' 
-                    ? ((cx - rect.left)/rect.width)*100 
-                    : ((cy - rect.top)/rect.height)*100;
-                
-                pct = Math.max(0, Math.min(100, pct));
-                
-                if (this.state.dragging.type === 'v') this.state.vLines[this.state.dragging.i] = pct; 
-                else this.state.hLines[this.state.dragging.i] = pct;
-                
-                this.renderFineTuneLines();
-            },
-            handleDragEnd: function() { 
-                if (this.state.dragging) { 
-                    this.state.dragging = null; 
-                    this.state.vLines.sort((a,b)=>a-b); 
-                    this.state.hLines.sort((a,b)=>a-b); 
-                    this.renderFineTuneLines(); 
-                } 
-            },
-            processSplit: function() {
-                this.toggleLoading(true, "CUTTING...");
-                setTimeout(() => {
-                    const cvs = this.state.croppedCanvas;
-                    const ctx = cvs.getContext('2d');
-                    const w = cvs.width;
-                    const h = cvs.height;
-                    
-                    const xc = [0, ...this.state.vLines.map(p => (p/100)*w), w];
-                    const yc = [0, ...this.state.hLines.map(p => (p/100)*h), h];
-                    
-                    this.state.results = [];
-                    
-                    for (let r=0; r<yc.length-1; r++) {
-                        for (let c=0; c<xc.length-1; c++) {
-                            const cell = document.createElement('canvas'); 
-                            cell.width = xc[c+1]-xc[c]; 
-                            cell.height = yc[r+1]-yc[r];
-                            
-                            if (cell.width > 0 && cell.height > 0) {
-                                cell.getContext('2d').drawImage(cvs, xc[c], yc[r], cell.width, cell.height, 0, 0, cell.width, cell.height);
-                                // FIX: Correct Template Literal Syntax
-                                this.state.results.push({ 
-                                    id: img-${r}-${c}, 
-                                    dataUrl: cell.toDataURL('image/jpeg', 0.95), 
-                                    filename: part_${r+1}_${c+1}.jpg 
-                                });
-                            }
+                for (let r=0; r<yc.length-1; r++) {
+                    for (let c=0; c<xc.length-1; c++) {
+                        const cell = document.createElement('canvas'); 
+                        cell.width = xc[c+1]-xc[c]; 
+                        cell.height = yc[r+1]-yc[r];
+                        
+                        if (cell.width > 0 && cell.height > 0) {
+                            cell.getContext('2d').drawImage(cvs, xc[c], yc[r], cell.width, cell.height, 0, 0, cell.width, cell.height);
+                            // FIX: Correct Template Literal Syntax
+                            this.state.results.push({ 
+                                id: img-${r}-${c}, 
+                                dataUrl: cell.toDataURL('image/jpeg', 0.95), 
+                                filename: part_${r+1}_${c+1}.jpg 
+                            });
                         }
                     }
-                    this.toggleLoading(false);
-                    this.setStep(5);
-                }, 50);
-            },
-            renderResults: function() {
-                const c = document.getElementById('results-container'); 
-                c.innerHTML = '';
-                this.state.results.forEach(it => { 
-                    const d = document.createElement('div'); 
-                    d.className = 'bg-game-surface p-1 rounded relative group'; 
-                    d.innerHTML = `
-                        <img src="${it.dataUrl}" class="w-full h-auto rounded-sm border border-game-primary/20">
-                        <a href="${it.dataUrl}" download="${it.filename}" class="absolute top-2 right-2 bg-game-primary p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                            <i data-lucide="download" class="w-3 h-3 text-black"></i>
-                        </a>
-                    `; 
-                    c.appendChild(d); 
-                });
-                try { lucide.createIcons(); } catch(e){}
-            },
-            downloadZip: function() {
-                const zip = new JSZip();
-                const f = zip.folder("split_images");
-                this.state.results.forEach(it => f.file(it.filename, it.dataUrl.split(',')[1], {base64:true}));
-                f.generateAsync({type:"blob"}).then(c => { 
-                    const l = document.createElement('a'); 
-                    l.href = URL.createObjectURL(c); 
-                    l.download = "Stone_Studio_Pack.zip"; 
-                    l.click(); 
-                });
-            },
-            reset: function() { 
-                this.state.step = 1; 
-                this.state.originalImage = null; 
-                this.state.croppedCanvas = null; 
-                this.state.results = []; 
-                this.setStep(1); 
-            }
-        };
-        
-        document.addEventListener('DOMContentLoaded', () => window.App.init());
-    </script>
-</body>
-</html>
+                }
+                this.toggleLoading(false);
+                this.setStep(5);
+            }, 50);
+        },
+        renderResults: function() {
+            const c = document.getElementById('results-container'); 
+            c.innerHTML = '';
+            this.state.results.forEach(it => { 
+                const d = document.createElement('div'); 
+                d.className = 'bg-game-surface p-1 rounded relative group'; 
+                d.innerHTML = `
+                    <img src="${it.dataUrl}" class="w-full h-auto rounded-sm border border-game-primary/20">
+                    <a href="${it.dataUrl}" download="${it.filename}" class="absolute top-2 right-2 bg-game-primary p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+                        <i data-lucide="download" class="w-3 h-3 text-black"></i>
+                    </a>
+                `; 
+                c.appendChild(d); 
+            });
+            try { lucide.createIcons(); } catch(e){}
+        },
+        downloadZip: function() {
+            const zip = new JSZip();
+            const f = zip.folder("split_images");
+            this.state.results.forEach(it => f.file(it.filename, it.dataUrl.split(',')[1], {base64:true}));
+            f.generateAsync({type:"blob"}).then(c => { 
+                const l = document.createElement('a'); 
+                l.href = URL.createObjectURL(c); 
+                l.download = "Stone_Studio_Pack.zip"; 
+                l.click(); 
+            });
+        },
+        reset: function() { 
+            this.state.step = 1; 
+            this.state.originalImage = null; 
+            this.state.croppedCanvas = null; 
+            this.state.results = []; 
+            this.setStep(1); 
+        }
+    };
+    
+    document.addEventListener('DOMContentLoaded', () => window.App.init());
+</script>
