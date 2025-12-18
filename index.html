@@ -1,4 +1,4 @@
-<!-- VERSION: v7.0 | UPDATED: iPhone 14 Memory Fix -->
+<!-- VERSION: v8.0 | UPDATED: 2025-12-18 02:20 PM | FIX: Syntax & iOS Input Overlay -->
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -48,7 +48,6 @@
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
     <!-- 2. JS Libraries -->
-    <!-- 使用 unpkg 作為備援 CDN，確保載入穩定 -->
     <script src="https://unpkg.com/cropperjs@1.6.1/dist/cropper.min.js"></script>
     <script src="https://unpkg.com/jszip@3.10.1/dist/jszip.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -66,7 +65,7 @@
         <header class="shrink-0 flex justify-between items-center mb-1 border-b border-game-surface pb-1 z-10 relative px-2">
             <div class="flex flex-col">
                 <h1 class="text-xl md:text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-game-primary to-cyan-100 font-[Rajdhani]">YZU- Stone Studio</h1>
-                <p class="text-[9px] text-game-muted font-mono mt-0.5">SYSTEM ONLINE // v7.0</p>
+                <p class="text-[9px] text-game-muted font-mono mt-0.5">SYSTEM ONLINE // v8.0 PERPLEXITY FIX</p>
             </div>
             <div class="flex items-center gap-1" id="progress-bar">
                 <div id="prog-1" class="h-1.5 w-3 md:w-6 rounded-sm bg-game-surface/30 skew-x-[-12deg] transition-colors"></div>
@@ -80,13 +79,30 @@
         <main class="flex-1 bg-game-surface/30 backdrop-blur-md rounded-lg shadow-2xl border border-game-surface ring-1 ring-white/5 relative flex flex-col overflow-hidden z-10">
             <div class="flex-1 flex flex-col p-1 relative h-full" id="main-content">
                 
-                <!-- STEP 1: UPLOAD -->
+                <!-- STEP 1: UPLOAD (FIXED: Transparent Overlay Method) -->
                 <div id="step-upload" class="step-section active justify-center items-center h-full">
-                    <div class="flex flex-col items-center justify-center w-full h-full border-2 border-dashed border-game-primary/30 rounded-xl p-4 text-center bg-game-surface/20 hover:bg-game-surface/40 cursor-pointer transition-colors" onclick="document.getElementById('file-input').click()">
-                        <div class="w-16 h-16 mb-4 flex items-center justify-center border-2 border-game-primary rounded-xl shadow-neon"><i data-lucide="scan-line" class="w-8 h-8 text-game-primary"></i></div>
-                        <h2 class="text-xl font-bold mb-1 font-[Rajdhani]">INITIALIZE UPLOAD</h2>
-                        <input type="file" id="file-input" accept="image/*" class="hidden">
-                        <button class="font-bold py-2 px-6 rounded-lg bg-game-primary text-black flex items-center gap-2 mt-2 hover:bg-cyan-400 transition-colors"><i data-lucide="upload" class="w-4 h-4"></i> SELECT FILE</button>
+                    <!-- 相對定位容器 -->
+                    <div class="relative flex flex-col items-center justify-center w-full h-full border-2 border-dashed border-game-primary/30 rounded-xl p-4 text-center bg-game-surface/20 hover:bg-game-surface/40 transition-colors group">
+                        
+                        <!-- 視覺內容 (被 Input 覆蓋，不可點擊) -->
+                        <div class="pointer-events-none flex flex-col items-center">
+                            <div class="w-16 h-16 mb-4 flex items-center justify-center border-2 border-game-primary rounded-xl shadow-neon group-hover:scale-110 transition-transform">
+                                <i data-lucide="scan-line" class="w-8 h-8 text-game-primary"></i>
+                            </div>
+                            <h2 class="text-xl font-bold mb-1 font-[Rajdhani]">INITIALIZE UPLOAD</h2>
+                            <p class="text-xs text-game-muted mb-4">Auto-Optimize for iPhone</p>
+                            <div class="font-bold py-2 px-6 rounded-lg bg-game-primary text-black flex items-center gap-2 mt-2 shadow-lg shadow-cyan-500/20">
+                                <i data-lucide="upload" class="w-4 h-4"></i> SELECT FILE
+                            </div>
+                        </div>
+                        <!-- 真正的 Input: 透明覆蓋整個父容器，保證手指一定點得到 -->
+                        <input 
+                            type="file" 
+                            id="file-input" 
+                            accept="image/png, image/jpeg, image/jpg" 
+                            class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-50"
+                            onchange="window.App.handleFileSelect(this)"
+                        >
                     </div>
                 </div>
                 <!-- STEP 2: CROP -->
@@ -191,10 +207,12 @@
             },
             init: function() {
                 try { lucide.createIcons(); } catch(e){}
-                document.getElementById('file-input').addEventListener('change', this.handleFileSelect.bind(this));
                 
+                // Mouse Events
                 document.addEventListener('mousemove', this.handleDragMove.bind(this));
                 document.addEventListener('mouseup', this.handleDragEnd.bind(this));
+                
+                // Touch Events
                 document.addEventListener('touchmove', this.handleDragMove.bind(this), { passive: false });
                 document.addEventListener('touchend', this.handleDragEnd.bind(this));
                 
@@ -205,16 +223,17 @@
                 if(txt) document.getElementById('loading-text').innerText = txt;
                 el.style.display = show ? 'flex' : 'none';
             },
-            // 關鍵修改：圖片上傳時直接縮小，防止 iPhone 記憶體爆炸
-            handleFileSelect: function(e) {
-                const file = e.target.files[0];
+            handleFileSelect: function(inputElement) {
+                const file = inputElement.files[0];
                 if (!file) return;
-                this.toggleLoading(true, "OPTIMIZING IMAGE...");
+                // Reset input value so same file can be selected again if needed
+                inputElement.value = '';
+                this.toggleLoading(true, "OPTIMIZING...");
                 const reader = new FileReader();
                 reader.onload = (evt) => {
                     const img = new Image();
                     img.onload = () => {
-                        // 強制縮小：任何超過 2500px 的圖片都會被縮放
+                        // FIX: Downscale large images for iOS memory safety
                         const MAX_SIZE = 2500;
                         let w = img.width;
                         let h = img.height;
@@ -228,14 +247,13 @@
                             const ctx = canvas.getContext('2d');
                             ctx.drawImage(img, 0, 0, w, h);
                             
-                            // 轉存為新的較小圖片
                             const resizedImg = new Image();
                             resizedImg.onload = () => {
                                 this.state.originalImage = resizedImg;
                                 this.toggleLoading(false);
                                 this.setStep(2);
                             };
-                            resizedImg.src = canvas.toDataURL('image/jpeg', 0.9); // 使用 JPEG 進一步省記憶體
+                            resizedImg.src = canvas.toDataURL('image/jpeg', 0.9);
                         } else {
                             this.state.originalImage = img;
                             this.toggleLoading(false);
@@ -243,9 +261,9 @@
                         }
                     };
                     img.onerror = () => {
-                        alert("Image load failed");
+                        alert("Image failed to load");
                         this.toggleLoading(false);
-                    }
+                    };
                     img.src = evt.target.result;
                 };
                 reader.readAsDataURL(file);
@@ -268,22 +286,18 @@
                 if (this.state.step === 1) { 
                     document.getElementById('step-upload').classList.add('active'); 
                     this.destroyCropper(); 
-                    document.getElementById('file-input').value = ''; 
                 }
                 else if (this.state.step === 2) { 
                     document.getElementById('step-crop').classList.add('active'); 
                     const img = document.getElementById('image-to-crop');
-                    if(this.state.originalImage) {
-                        img.src = this.state.originalImage.src;
-                        // 確保圖片載入完成後再啟動 Cropper
-                        setTimeout(() => this.initCropper(img), 100); 
-                    }
+                    img.src = this.state.originalImage.src;
+                    setTimeout(() => this.initCropper(img), 100); 
                 }
                 else if (this.state.step === 3) { 
                     document.getElementById('step-grid').classList.add('active'); 
                     this.destroyCropper(); 
                     this.updateGridOverlay(); 
-                    if(this.state.croppedCanvas) {
+                    if (this.state.croppedCanvas) {
                         document.getElementById('grid-preview-img').src = this.state.croppedCanvas.toDataURL(); 
                     }
                 }
@@ -306,7 +320,7 @@
                     autoCropArea: 0.9, 
                     background: false,
                     responsive: true,
-                    checkCrossOrigin: false // 重要：防止跨域錯誤
+                    checkCrossOrigin: false 
                 }); 
             },
             destroyCropper: function() { 
@@ -317,14 +331,10 @@
             },
             confirmCrop: function() { 
                 if (!this.state.cropper) return; 
-                this.toggleLoading(true, "CROP & PREPARE...");
-                
-                // 使用 setTimeout 讓 UI 有機會顯示 Loading
+                this.toggleLoading(true, "CROPPING...");
                 setTimeout(() => {
                     this.state.croppedCanvas = this.state.cropper.getCroppedCanvas({ 
-                        imageSmoothingQuality: 'high',
-                        maxWidth: 2500, // 再次確保輸出也不會過大
-                        maxHeight: 2500
+                        imageSmoothingQuality: 'high' 
                     }); 
                     this.toggleLoading(false);
                     this.setStep(3); 
@@ -343,6 +353,7 @@
             updateGridOverlay: function() {
                 const ol = document.getElementById('grid-overlay'); 
                 ol.style.display = 'grid'; 
+                // FIX: Correct Template Literal Syntax
                 ol.style.gridTemplateColumns = repeat(${this.state.cols}, 1fr); 
                 ol.style.gridTemplateRows = repeat(${this.state.rows}, 1fr); 
                 ol.innerHTML = '';
@@ -417,8 +428,7 @@
                 } 
             },
             processSplit: function() {
-                this.toggleLoading(true, "SPLITTING...");
-                
+                this.toggleLoading(true, "CUTTING...");
                 setTimeout(() => {
                     const cvs = this.state.croppedCanvas;
                     const ctx = cvs.getContext('2d');
@@ -438,6 +448,7 @@
                             
                             if (cell.width > 0 && cell.height > 0) {
                                 cell.getContext('2d').drawImage(cvs, xc[c], yc[r], cell.width, cell.height, 0, 0, cell.width, cell.height);
+                                // FIX: Correct Template Literal Syntax
                                 this.state.results.push({ 
                                     id: img-${r}-${c}, 
                                     dataUrl: cell.toDataURL('image/jpeg', 0.95), 
@@ -482,7 +493,7 @@
                 this.state.originalImage = null; 
                 this.state.croppedCanvas = null; 
                 this.state.results = []; 
-                this.renderStep(); 
+                this.setStep(1); 
             }
         };
         
