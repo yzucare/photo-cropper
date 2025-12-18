@@ -1,121 +1,150 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
-    body { font-family: Arial, sans-serif; }
-    .container { width: 100%; padding: 10px; }
-    .input-group { 
-      display: flex; 
-      flex-wrap: wrap; 
-      gap: 8px;
-      margin-bottom: 15px;
-    }
-    input { 
-      width: 80px; 
-      padding: 5px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-    }
-    canvas { 
-      margin-top: 10px;
-      max-width: 390px;
-      max-height: 300px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>可愛計算機</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #ffe6f2;
+            margin: 0;
+        }
+        .calculator {
+            background-color: #ffcce6;
+            border-radius: 20px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            width: 320px;
+        }
+        .title {
+            text-align: center;
+            font-size: 1.5rem;
+            color: #ff4da6;
+            margin-bottom: 10px;
+        }
+        .display {
+            background-color: #fff;
+            border-radius: 10px;
+            padding: 15px;
+            font-size: 2rem;
+            text-align: right;
+            margin-bottom: 20px;
+        }
+        .buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+        button {
+            background-color: #ff99cc;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.5rem;
+            padding: 15px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #ff66b3;
+        }
+        button:active {
+            background-color: #ff4da6;
+        }
+    </style>
 </head>
 <body>
-  <div class="container">
-    <div class="input-group">
-      <div><label>N=</label><input type="number" id="N" min="1"></div>
-      <div><label>n=</label><input type="number" id="n" min="1"></div>
-      <div><label>c=</label><input type="number" id="c" min="0"></div>
-      <div><label>p=</label><input type="text" id="p" readonly></div>
+    <div class="calculator">
+        <div class="title">❤️ 可愛計算機 ❤️</div>
+        <div class="display" id="display">0</div>
+        <div class="buttons">
+            <!-- Numbers and Operators -->
+            <button onclick="clearDisplay()">C</button>
+            <button onclick="deleteLast()">←</button>
+            <button onclick="setOperator('%')">%</button>
+            <button onclick="setOperator('/')">÷</button>
+            <button onclick="appendNumber(7)">7</button>
+            <button onclick="appendNumber(8)">8</button>
+            <button onclick="appendNumber(9)">9</button>
+            <button onclick="setOperator('*')">×</button>
+            <button onclick="appendNumber(4)">4</button>
+            <button onclick="appendNumber(5)">5</button>
+            <button onclick="appendNumber(6)">6</button>
+            <button onclick="setOperator('-')">−</button>
+            <button onclick="appendNumber(1)">1</button>
+            <button onclick="appendNumber(2)">2</button>
+            <button onclick="appendNumber(3)">3</button>
+            <button onclick="setOperator('+')">+</button>
+            <button style="grid-column: span 2;" onclick="appendNumber(0)">0</button>
+            <button onclick="appendNumber('.')">.</button>
+            <button onclick="calculate()">=</button>
+        </div>
     </div>
-    <canvas id="ocChart"></canvas>
-  </div>
-  <script>
-    let chart;
-    const calculatePa = (p, n, c) => {
-      let pa = 0;
-      for(let k=0; k<=c; k++){
-        pa += binomial(n, k)  Math.pow(p, k)  Math.pow(1-p, n-k);
-      }
-      return pa;
-    };
-    const binomial = (n, k) => {
-      if(k < 0 || k > n) return 0;
-      let coeff = 1;
-      for(let x=n-k+1; x<=n; x++) coeff *= x;
-      return coeff / factorial(k);
-    };
-    const factorial = num => {
-      return num <= 1 ? 1 : num * factorial(num - 1);
-    };
-    const updateChart = () => {
-      const N = parseInt(document.getElementById('N').value) || 0;
-      const n = parseInt(document.getElementById('n').value) || 0;
-      const c = parseInt(document.getElementById('c').value) || 0;
-      const p = n > 0 ? c / n : 0;
-      document.getElementById('p').value = p.toFixed(4);
-      if(chart) chart.destroy();
-      if(n === 0 || c > n) return;
-      const labels = Array.from({length: 21}, (_,i) => i/20);
-      const data = labels.map(p => calculatePa(p, n, c));
-      chart = new Chart(document.getElementById('ocChart'), {
-        type: 'line',
-        data: {
-          labels: labels.map(v => (v*100).toFixed(0)+'%'),
-          datasets: [{
-            label: 'OC Curve',
-            data: data,
-            borderColor: '#FF6B6B',
-            borderWidth: 2,
-            tension: 0.4,
-            pointRadius: 0
-          }]
-        },
-        options: {
-          responsive: true,
-          plugins: {
-            legend: { labels: { font: { size: 10 } } }
-          },
-          scales: {
-            x: {
-              title: { 
-                display: true, 
-                text: 'Defect Rate (%)',
-                font: { size: 10 }
-              },
-              ticks: { 
-                font: { size: 8 },
-                autoSkipPadding: 10
-              }
-            },
-            y: { 
-              title: { 
-                display: true, 
-                text: 'Acceptance Probability (Pa)',
-                font: { size: 10 }
-              },
-              ticks: {
-                font: { size: 8 },
-                callback: value => (value*100).toFixed(0)+'%'
-              },
-              min: 0,
-              max: 1
-            }
-          },
-          layout: {
-            padding: { left: 15, right: 15, top: 10, bottom: 15 }
-          }
+    <!-- JavaScript -->
+    <script>
+        let currentInput = '';
+        let operator = '';
+        let previousInput = '';
+        function appendNumber(number) {
+            if (currentInput === '0') currentInput = '';
+            currentInput += number.toString();
+            updateDisplay(currentInput);
         }
-      });
-    };
-    document.querySelectorAll('input[type="number"]').forEach(input => {
-      input.addEventListener('input', updateChart);
-    });
-  </script>
+        function setOperator(op) {
+            if (currentInput === '') return;
+            operator = op;
+            previousInput = currentInput;
+            currentInput = '';
+        }
+        function calculate() {
+            let result = 0;
+            const prev = parseFloat(previousInput);
+            const curr = parseFloat(currentInput);
+            if (isNaN(prev) || isNaN(curr)) return;
+            switch (operator) {
+                case '+':
+                    result = prev + curr;
+                    break;
+                case '-':
+                    result = prev - curr;
+                    break;
+                case '*':
+                    result = prev * curr;
+                    break;
+                case '/':
+                    result = prev / curr;
+                    break;
+                case '%':
+                    result = prev % curr;
+                    break;    
+                default:
+                    return;
+            }
+            currentInput = result.toString() + ' ❤️';
+            
+			operator = '';
+			previousInput = '';
+            
+			updateDisplay(currentInput);
+		}
+		function clearDisplay() {
+			currentInput = '';
+			operator = '';
+			previousInput = '';
+			
+			updateDisplay('0');
+		}
+		function deleteLast() {
+			currentInput = currentInput.slice(0, -1);
+			if (currentInput === '') currentInput = '0';
+			updateDisplay(currentInput);
+		}
+		function updateDisplay(value) {
+			document.getElementById('display').innerText = value.substring(0, 12); // 限制顯示長度
+		}
+    </script>
 </body>
 </html>
