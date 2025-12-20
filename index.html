@@ -1,211 +1,306 @@
-<!-- VERSION: v12.0 | BASED ON YOUR VERIFIED WORKING v2.2 CODE -->
+<!-- 2025-12-19 17:55 Minimal Stone Studio with iOS-safe label+file input (Fixed) -->
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-TW">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>YZU- Stone Studio</title>
-    
-    <!-- 1. CSS Framework & Libraries -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css" />
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;800&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
-    <!-- Tailwind Configuration -->
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            colors: {
-              game: { bg: '#0b1120', surface: '#1e293b', primary: '#06b6d4', accent: '#f43f5e', text: '#f1f5f9', muted: '#94a3b8' }
-            },
-            fontFamily: { sans: ['"Rajdhani"', '"Nunito"', 'sans-serif'], mono: ['"Fira Code"', 'monospace'] },
-            boxShadow: { 'neon': '0 0 10px rgba(6, 182, 212, 0.5)', 'neon-red': '0 0 10px rgba(244, 63, 94, 0.5)' }
-          }
-        }
-      }
-    </script>
-    <style>
-        /* WIX IFRAME COMPATIBILITY */
-        html, body { height: 100%; width: 100%; margin: 0; padding: 0; overflow-x: hidden; overflow-y: auto; background-color: #0b1120; touch-action: manipulation; }
-        .app-container { min-height: 100%; display: flex; flex-direction: column; }
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #1e293b; }
-        ::-webkit-scrollbar-thumb { background: #06b6d4; border-radius: 4px; }
-        .step-section { display: none; flex-direction: column; flex: 1; animation: fadeIn 0.3s ease-in-out; }
-        .step-section.active { display: flex; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        /* Drag Lines */
-        .drag-line-v { position: absolute; top: 0; bottom: 0; width: 20px; margin-left: -10px; cursor: col-resize; z-index: 20; display: flex; justify-content: center; }
-        .drag-line-v::after { content: ''; width: 2px; height: 100%; background-color: rgba(6, 182, 212, 0.8); box-shadow: 0 0 8px rgba(6, 182, 212, 0.8); }
-        .drag-line-h { position: absolute; left: 0; right: 0; height: 20px; margin-top: -10px; cursor: row-resize; z-index: 20; display: flex; flex-direction: column; justify-content: center; }
-        .drag-line-h::after { content: ''; height: 2px; width: 100%; background-color: rgba(244, 63, 94, 0.8); box-shadow: 0 0 8px rgba(244, 63, 94, 0.8); }
-    </style>
-    <!-- 2. JS Libraries -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
+  <meta charset="UTF-8">
+  <title>Stone Studio Minimal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css"
+  />
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+      background: #0b1120;
+      color: #e2e8f0;
+    }
+    .step-section { display: none; }
+    .step-section.active { display: block; }
+    #previewContainer {
+      border: 2px dashed rgba(148, 163, 184, 0.7);
+    }
+    /* 讓真正的 input 佔滿整個按鈕區域但透明，可確保 iOS 一定接到點擊 */
+    #fileInput {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+  </style>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            game: {
+              bg: '#0b1120',
+              surface: '#1e293b',
+              primary: '#06b6d4',
+              accent: '#f43f5e',
+              text: '#f1f5f9',
+              muted: '#94a3b8'
+            }
+          }
+        }
+      }
+    };
+  </script>
 </head>
-<body class="bg-game-bg text-game-text font-sans antialiased">
-    <div class="app-container max-w-4xl mx-auto p-2 md:p-4 relative">
-        <header class="shrink-0 flex justify-between items-center mb-2 border-b border-game-surface pb-2 z-10 relative">
-            <div class="flex flex-col">
-                <h1 class="text-2xl md:text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-game-primary to-cyan-100 font-[Rajdhani]">YZU- Stone Studio</h1>
-                <p class="text-[10px] text-game-muted font-mono mt-1">SYSTEM ONLINE // v12.0</p>
-            </div>
-            <div class="flex items-center gap-1" id="progress-bar">
-                <div id="prog-1" class="h-1.5 w-4 md:w-8 rounded-sm bg-game-surface/30 skew-x-[-12deg] transition-colors"></div>
-                <div id="prog-2" class="h-1.5 w-4 md:w-8 rounded-sm bg-game-surface/30 skew-x-[-12deg] transition-colors"></div>
-                <div id="prog-3" class="h-1.5 w-4 md:w-8 rounded-sm bg-game-surface/30 skew-x-[-12deg] transition-colors"></div>
-                <div id="prog-4" class="h-1.5 w-4 md:w-8 rounded-sm bg-game-surface/30 skew-x-[-12deg] transition-colors"></div>
-                <div id="prog-5" class="h-1.5 w-4 md:w-8 rounded-sm bg-game-surface/30 skew-x-[-12deg] transition-colors"></div>
-            </div>
-        </header>
-        <main class="flex-1 bg-game-surface/30 backdrop-blur-md rounded-lg shadow-2xl border border-game-surface ring-1 ring-white/5 relative flex flex-col overflow-hidden z-10" style="min-height: 500px;">
-            <div class="flex-1 flex flex-col p-3 md:p-6 relative" id="main-content">
-                <!-- STEP 1: UPLOAD -->
-                <div id="step-upload" class="step-section active justify-center items-center h-full">
-                    <div class="flex flex-col items-center justify-center w-full h-full border-2 border-dashed border-game-primary/30 rounded-xl p-6 text-center bg-game-surface/20 hover:bg-game-surface/40 cursor-pointer" onclick="document.getElementById('file-input').click()">
-                        <div class="w-20 h-20 mb-6 flex items-center justify-center border-2 border-game-primary rounded-xl shadow-neon"><i data-lucide="scan-line" class="w-10 h-10 text-game-primary"></i></div>
-                        <h2 class="text-2xl font-bold mb-2 font-[Rajdhani]">INITIALIZE UPLOAD</h2>
-                        <input type="file" id="file-input" accept="image/*" class="hidden">
-                        <button class="font-bold py-3 px-5 rounded-lg bg-game-primary text-black flex items-center gap-2 mt-4"><i data-lucide="upload" class="w-5 h-5"></i> SELECT_FILE.EXE</button>
-                    </div>
-                </div>
-                <!-- STEP 2: CROP -->
-                <div id="step-crop" class="step-section h-full">
-                    <div class="shrink-0 flex justify-between border-b border-game-surface pb-2 mb-2">
-                        <h3 class="text-lg font-bold text-game-primary font-[Rajdhani]">Stage 1: Extract</h3>
-                        <button onclick="window.App.reset()" class="text-xs text-game-muted">ABORT</button>
-                    </div>
-                    <div class="flex-1 relative bg-black/50 rounded-lg flex items-center justify-center" style="min-height: 300px;">
-                        <img id="image-to-crop" src="" style="display: block; max-width: 100%; max-height: 60vh;">
-                    </div>
-                    <div class="shrink-0 flex justify-end pt-3"><button onclick="window.App.confirmCrop()" class="font-bold py-2 px-6 rounded-lg bg-game-primary text-black">CONFIRM_ZONE</button></div>
-                </div>
-                <!-- STEP 3: GRID -->
-                <div id="step-grid" class="step-section h-full">
-                    <div class="flex flex-col lg:flex-row gap-4 h-full">
-                        <div class="flex-1 bg-black/40 p-4 rounded-xl flex items-center justify-center relative overflow-hidden">
-                            <div class="relative shadow-2xl z-10" style="max-height: 60vh;">
-                                <img id="grid-preview-img" src="" class="max-w-full max-h-full object-contain">
-                                <div id="grid-overlay" class="absolute inset-0 border border-game-primary/50 pointer-events-none z-20"></div>
-                            </div>
-                        </div>
-                        <div class="shrink-0 w-full lg:w-64 flex flex-col gap-3">
-                            <h3 class="text-lg font-bold text-game-primary font-[Rajdhani]">Stage 2: Grid</h3>
-                            <div class="bg-game-surface/50 p-2 rounded"><label class="text-[10px] font-bold text-game-primary">COLS (X)</label><div class="flex justify-between gap-2 mt-1"><button onclick="window.App.updateGrid('cols', -1)" class="h-8 w-8 bg-game-surface border border-game-primary text-game-primary">-</button><span id="display-cols" class="font-mono text-xl text-white">2</span><button onclick="window.App.updateGrid('cols', 1)" class="h-8 w-8 bg-game-surface border border-game-primary text-game-primary">+</button></div></div>
-                            <div class="bg-game-surface/50 p-2 rounded"><label class="text-[10px] font-bold text-game-accent">ROWS (Y)</label><div class="flex justify-between gap-2 mt-1"><button onclick="window.App.updateGrid('rows', -1)" class="h-8 w-8 bg-game-surface border border-game-accent text-game-accent">-</button><span id="display-rows" class="font-mono text-xl text-white">2</span><button onclick="window.App.updateGrid('rows', 1)" class="h-8 w-8 bg-game-surface border border-game-accent text-game-accent">+</button></div></div>
-                            <div class="flex gap-2 pt-2 mt-auto"><button onclick="window.App.setStep(2)" class="flex-1 py-2 px-3 border border-game-primary text-game-primary text-xs font-bold">BACK</button><button onclick="window.App.goToFineTune()" class="flex-[2] py-2 px-3 bg-game-primary text-black text-xs font-bold">CALIBRATE</button></div>
-                        </div>
-                    </div>
-                </div>
-                <!-- STEP 4: FINE TUNE -->
-                <div id="step-finetune" class="step-section h-full">
-                    <div class="shrink-0 border-b border-game-surface pb-1 mb-2"><h3 class="text-lg font-bold text-game-primary font-[Rajdhani]">Stage 3: Targeting</h3><p class="text-[10px] text-game-muted">Drag lines to adjust cut positions.</p></div>
-                    <div class="flex-1 bg-black/50 rounded-lg flex items-center justify-center p-2 overflow-hidden touch-none" style="min-height: 300px;">
-                        <div id="finetune-container" class="relative inline-block"><img id="finetune-img" src="" class="block opacity-90 rounded-sm select-none" style="max-height: 60vh; max-width: 100%; pointer-events: none;"><div id="finetune-overlay" class="absolute inset-0 z-10"></div></div>
-                    </div>
-                    <div class="shrink-0 flex gap-2 pt-3"><button onclick="window.App.setStep(3)" class="flex-1 py-2 px-3 border border-game-primary text-game-primary text-xs font-bold">BACK</button><button onclick="window.App.processSplit()" class="flex-[2] py-2 px-3 bg-game-accent text-white text-xs font-bold shadow-neon-red">EXECUTE CUT</button></div>
-                </div>
-                <!-- STEP 5: RESULT -->
-                <div id="step-result" class="step-section h-full">
-                    <div class="shrink-0 flex justify-between items-end mb-4 border-b border-game-surface pb-2"><h2 class="text-2xl font-bold font-[Rajdhani]">MISSION COMPLETE</h2><div class="flex gap-2"><button onclick="window.open('https://www.threads.com/@iistone_1', '_blank')" class="h-8 px-3 bg-game-surface border text-game-text text-xs">Help</button><button onclick="window.App.downloadZip()" class="h-8 px-3 bg-game-primary text-black text-xs font-bold">ZIP</button></div></div>
-                    <div class="flex-1 overflow-y-auto p-3 bg-black/30 rounded-xl"><div id="results-container" class="grid grid-cols-2 md:grid-cols-4 gap-3"></div></div>
-                    <div class="shrink-0 flex justify-center pt-4"><button onclick="window.App.reset()" class="py-2 px-6 border border-yellow-400 text-yellow-400 font-bold">START NEW IMAGE</button></div>
-                </div>
-            </div>
-            <div class="shrink-0 text-center mb-2 bg-black/50 py-2 border-t border-game-primary/30"><p class="text-game-primary font-bold font-mono text-xs">DESIGNED BY Stone/YZU-DBA</p></div>
-        </main>
-    </div>
-    <script>
-        window.App = {
-            state: { step: 1, originalImage: null, cropper: null, croppedCanvas: null, rows: 2, cols: 2, vLines: [], hLines: [], dragging: null, results: [] },
-            init: function() {
-                lucide.createIcons();
-                document.getElementById('file-input').addEventListener('change', this.handleFileSelect.bind(this));
-                document.addEventListener('mousemove', this.handleDragMove.bind(this));
-                document.addEventListener('mouseup', this.handleDragEnd.bind(this));
-                document.addEventListener('touchmove', this.handleDragMove.bind(this), { passive: false });
-                document.addEventListener('touchend', this.handleDragEnd.bind(this));
-                this.renderStep();
-            },
-            handleFileSelect: function(e) {
-                const file = e.target.files[0];
-                if (file) { const reader = new FileReader(); reader.onload = (evt) => { const img = new Image(); img.onload = () => { this.state.originalImage = img; this.setStep(2); }; img.src = evt.target.result; }; reader.readAsDataURL(file); }
-            },
-            setStep: function(n) { this.state.step = n; this.renderStep(); },
-            renderStep: function() {
-                ['step-upload', 'step-crop', 'step-grid', 'step-finetune', 'step-result'].forEach(id => document.getElementById(id).classList.remove('active'));
-                for(let i=1; i<=5; i++) { const el = document.getElementById('prog-'+i); el.className = i <= this.state.step ? 'h-1.5 w-4 md:w-8 rounded-sm bg-game-primary shadow-neon skew-x-[-12deg]' : 'h-1.5 w-4 md:w-8 rounded-sm bg-game-surface/30 skew-x-[-12deg]'; }
-                if (this.state.step === 1) { document.getElementById('step-upload').classList.add('active'); this.destroyCropper(); document.getElementById('file-input').value = ''; }
-                else if (this.state.step === 2) { document.getElementById('step-crop').classList.add('active'); const img = document.getElementById('image-to-crop'); img.src = this.state.originalImage.src; setTimeout(() => this.initCropper(img), 50); }
-                else if (this.state.step === 3) { document.getElementById('step-grid').classList.add('active'); this.destroyCropper(); this.updateGridOverlay(); document.getElementById('grid-preview-img').src = this.state.croppedCanvas.toDataURL(); }
-                else if (this.state.step === 4) { document.getElementById('step-finetune').classList.add('active'); this.initFineTune(); }
-                else if (this.state.step === 5) { document.getElementById('step-result').classList.add('active'); this.renderResults(); }
-                setTimeout(() => lucide.createIcons(), 0);
-            },
-            initCropper: function(img) { this.destroyCropper(); this.state.cropper = new Cropper(img, { viewMode: 1, dragMode: 'move', autoCropArea: 0.9, background: false }); },
-            destroyCropper: function() { if (this.state.cropper) { this.state.cropper.destroy(); this.state.cropper = null; } },
-            confirmCrop: function() { if (!this.state.cropper) return; this.state.croppedCanvas = this.state.cropper.getCroppedCanvas({ imageSmoothingQuality: 'high' }); this.setStep(3); },
-            updateGrid: function(type, delta) {
-                if (type === 'rows') { this.state.rows = Math.max(1, Math.min(20, this.state.rows + delta)); document.getElementById('display-rows').innerText = this.state.rows; } 
-                else { this.state.cols = Math.max(1, Math.min(20, this.state.cols + delta)); document.getElementById('display-cols').innerText = this.state.cols; }
-                this.updateGridOverlay();
-            },
-            updateGridOverlay: function() {
-                const ol = document.getElementById('grid-overlay'); ol.style.display = 'grid'; ol.style.gridTemplateColumns = repeat(${this.state.cols}, 1fr); ol.style.gridTemplateRows = repeat(${this.state.rows}, 1fr); ol.innerHTML = '';
-                for (let i=0; i < this.state.rows * this.state.cols; i++) { const c = document.createElement('div'); c.className = 'border border-game-primary/30'; ol.appendChild(c); }
-            },
-            goToFineTune: function() {
-                this.state.vLines = []; this.state.hLines = [];
-                for (let i = 1; i < this.state.cols; i++) this.state.vLines.push((i / this.state.cols) * 100);
-                for (let i = 1; i < this.state.rows; i++) this.state.hLines.push((i / this.state.rows) * 100);
-                this.setStep(4);
-            },
-            initFineTune: function() { document.getElementById('finetune-img').src = this.state.croppedCanvas.toDataURL(); this.renderFineTuneLines(); },
-            renderFineTuneLines: function() {
-                const ol = document.getElementById('finetune-overlay'); ol.innerHTML = '';
-                this.state.vLines.forEach((pos, i) => { const el = document.createElement('div'); el.className = 'drag-line-v'; el.style.left = pos + '%'; el.onmousedown = (e) => this.handleDragStart(e, 'v', i); el.ontouchstart = (e) => this.handleDragStart(e, 'v', i); ol.appendChild(el); });
-                this.state.hLines.forEach((pos, i) => { const el = document.createElement('div'); el.className = 'drag-line-h'; el.style.top = pos + '%'; el.onmousedown = (e) => this.handleDragStart(e, 'h', i); el.ontouchstart = (e) => this.handleDragStart(e, 'h', i); ol.appendChild(el); });
-            },
-            handleDragStart: function(e, type, i) { e.preventDefault(); this.state.dragging = { type, i }; },
-            handleDragMove: function(e) {
-                if (!this.state.dragging) return; e.preventDefault();
-                const rect = document.getElementById('finetune-container').getBoundingClientRect();
-                let cx = e.clientX || e.touches[0].clientX, cy = e.clientY || e.touches[0].clientY;
-                let pct = this.state.dragging.type === 'v' ? ((cx - rect.left)/rect.width)*100 : ((cy - rect.top)/rect.height)*100;
-                pct = Math.max(0, Math.min(100, pct));
-                if (this.state.dragging.type === 'v') this.state.vLines[this.state.dragging.i] = pct; else this.state.hLines[this.state.dragging.i] = pct;
-                this.renderFineTuneLines();
-            },
-            handleDragEnd: function() { if (this.state.dragging) { this.state.dragging = null; this.state.vLines.sort((a,b)=>a-b); this.state.hLines.sort((a,b)=>a-b); this.renderFineTuneLines(); } },
-            processSplit: function() {
-                const cvs = this.state.croppedCanvas, ctx = cvs.getContext('2d'), w = cvs.width, h = cvs.height;
-                const xc = [0, ...this.state.vLines.map(p => (p/100)*w), w], yc = [0, ...this.state.hLines.map(p => (p/100)*h), h];
-                this.state.results = [];
-                for (let r=0; r<yc.length-1; r++) {
-                    for (let c=0; c<xc.length-1; c++) {
-                        const cell = document.createElement('canvas'); cell.width = xc[c+1]-xc[c]; cell.height = yc[r+1]-yc[r];
-                        if (cell.width > 0 && cell.height > 0) {
-                            cell.getContext('2d').drawImage(cvs, xc[c], yc[r], cell.width, cell.height, 0, 0, cell.width, cell.height);
-                            this.state.results.push({ id: img-${r}-${c}, dataUrl: cell.toDataURL('image/jpeg', 0.95), filename: part_${r+1}_${c+1}.jpg });
-                        }
-                    }
-                }
-                this.setStep(5);
-            },
-            renderResults: function() {
-                const c = document.getElementById('results-container'); c.innerHTML = '';
-                this.state.results.forEach(it => { const d = document.createElement('div'); d.className = 'bg-game-surface p-1 rounded relative group'; d.innerHTML = <img src="${it.dataUrl}" class="w-full h-auto"><a href="${it.dataUrl}" download="${it.filename}" class="absolute top-2 right-2 bg-game-primary p-1 rounded opacity-0 group-hover:opacity-100"><i data-lucide="download" class="w-3 h-3 text-black"></i></a>; c.appendChild(d); });
-            },
-            downloadZip: function() {
-                const zip = new JSZip(), f = zip.folder("split_images");
-                this.state.results.forEach(it => f.file(it.filename, it.dataUrl.split(',')[1], {base64:true}));
-                f.generateAsync({type:"blob"}).then(c => { const l = document.createElement('a'); l.href = URL.createObjectURL(c); l.download = "stone_yzu_split.zip"; l.click(); });
-            },
-            reset: function() { this.state.step = 1; this.state.originalImage = null; this.state.croppedCanvas = null; this.state.results = []; this.renderStep(); }
-        };
-        document.addEventListener('DOMContentLoaded', () => window.App.init());
-    </script>
+<body class="min-h-screen flex items-center justify-center p-4">
+  <div class="bg-game-surface/60 w-full max-w-md rounded-3xl shadow-xl px-5 py-6">
+    <h1 class="text-xl font-semibold text-center text-cyan-300 mb-4">
+      Stone Studio Minimal
+    </h1>
+
+    <!-- Step 1: 上傳 -->
+    <section id="step-1" class="step-section active">
+      <div
+        id="previewContainer"
+        class="h-64 rounded-2xl bg-gray-900 flex items-center justify-center overflow-hidden mb-4"
+      >
+        <span id="placeholderText" class="text-gray-500 text-sm">尚未選擇圖片</span>
+        <img id="previewImage" alt="預覽" class="hidden w-full h-full object-contain">
+      </div>
+
+      <!-- label + input 疊在一起，避免 JS click() -->
+      <label
+        class="relative w-full flex items-center justify-center gap-2 bg-blue-600 active:bg-blue-700
+        text-white text-base font-medium py-3 rounded-2xl shadow-sm mb-3 cursor-pointer"
+      >
+        選擇照片
+        <input type="file" id="fileInput" accept="image/*">
+      </label>
+
+      <button
+        id="btnGoCrop"
+        class="w-full bg-emerald-500 text-white py-3 rounded-2xl font-medium disabled:bg-gray-500"
+        disabled
+      >
+        進入裁切
+      </button>
+    </section>
+
+    <!-- Step 2: 裁切 -->
+    <section id="step-2" class="step-section">
+      <div class="h-64 bg-black rounded-2xl flex items-center justify-center overflow-hidden mb-4">
+        <img id="imageToCrop" src="" style="max-width:100%; max-height:100%; display:block;">
+      </div>
+      <div class="flex gap-2">
+        <button
+          id="btnBack1"
+          class="flex-1 py-2 rounded-xl border border-gray-500 text-gray-300 text-sm"
+        >
+          返回上一步
+        </button>
+        <button
+          id="btnCrop"
+          class="flex-1 py-2 rounded-xl bg-cyan-500 text-black font-semibold text-sm"
+        >
+          完成裁切
+        </button>
+      </div>
+    </section>
+
+    <!-- Step 3: 切格 + 下載 -->
+    <section id="step-3" class="step-section">
+      <div class="mb-3">
+        <label class="text-xs text-gray-300 mr-2">欄數</label>
+        <input
+          type="number"
+          id="colsInput"
+          min="1"
+          max="10"
+          value="2"
+          class="w-16 bg-gray-800 text-center rounded px-1 py-0.5 text-sm"
+        >
+        <label class="text-xs text-gray-300 ml-4 mr-2">列數</label>
+        <input
+          type="number"
+          id="rowsInput"
+          min="1"
+          max="10"
+          value="2"
+          class="w-16 bg-gray-800 text-center rounded px-1 py-0.5 text-sm"
+        >
+      </div>
+
+      <div class="h-52 bg-black rounded-2xl flex items-center justify-center overflow-hidden mb-3">
+        <img id="croppedPreview" src="" class="max-w-full max-h-full object-contain">
+      </div>
+
+      <button
+        id="btnSplit"
+        class="w-full bg-cyan-500 text-black py-2 rounded-xl font-semibold mb-3"
+      >
+        分割圖片
+      </button>
+
+      <div
+        id="resultContainer"
+        class="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto"
+      ></div>
+
+      <button
+        id="btnBack2"
+        class="mt-3 w-full py-2 rounded-xl border border-gray-500 text-gray-300 text-sm"
+      >
+        重新選擇圖片
+      </button>
+    </section>
+  </div>
+
+  <script src="https://unpkg.com/cropperjs@1.6.1/dist/cropper.min.js"></script>
+  <script>
+    const fileInput = document.getElementById('fileInput');
+    const previewImage = document.getElementById('previewImage');
+    const placeholderText = document.getElementById('placeholderText');
+    const btnGoCrop = document.getElementById('btnGoCrop');
+    const imageToCrop = document.getElementById('imageToCrop');
+    const croppedPreview = document.getElementById('croppedPreview');
+    const colsInput = document.getElementById('colsInput');
+    const rowsInput = document.getElementById('rowsInput');
+    const resultContainer = document.getElementById('resultContainer');
+
+    let uploadedDataUrl = null;
+    let cropper = null;
+    let croppedCanvas = null;
+
+    function setStep(n) {
+      ['step-1', 'step-2', 'step-3'].forEach(id => {
+        document.getElementById(id).classList.remove('active');
+      });
+      document.getElementById('step-' + n).classList.add('active');
+    }
+
+    // 上傳圖片
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function (evt) {
+        const dataUrl = evt.target.result;
+        uploadedDataUrl = dataUrl;
+        previewImage.src = dataUrl;
+        previewImage.classList.remove('hidden');
+        placeholderText.classList.add('hidden');
+        btnGoCrop.disabled = false;
+      };
+      reader.onerror = function () {
+        alert('讀取圖片失敗');
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // 進入裁切
+    document.getElementById('btnGoCrop').addEventListener('click', () => {
+      if (!uploadedDataUrl) return;
+      imageToCrop.src = uploadedDataUrl;
+      setStep(2);
+
+      setTimeout(() => {
+        if (cropper) cropper.destroy();
+        cropper = new Cropper(imageToCrop, {
+          viewMode: 1,
+          dragMode: 'move',
+          autoCropArea: 0.9,
+          background: false
+        });
+      }, 100);
+    });
+
+    // 完成裁切
+    document.getElementById('btnCrop').addEventListener('click', () => {
+      if (!cropper) return;
+
+      croppedCanvas = cropper.getCroppedCanvas({
+        maxWidth: 2500,
+        maxHeight: 2500,
+        imageSmoothingQuality: 'high'
+      });
+
+      croppedPreview.src = croppedCanvas.toDataURL('image/jpeg', 0.9);
+      setStep(3);
+    });
+
+    // 分割圖片
+    document.getElementById('btnSplit').addEventListener('click', () => {
+      if (!croppedCanvas) return;
+
+      const cols = Math.max(1, Math.min(10, parseInt(colsInput.value) || 1));
+      const rows = Math.max(1, Math.min(10, parseInt(rowsInput.value) || 1));
+
+      const w = croppedCanvas.width;
+      const h = croppedCanvas.height;
+      const cellW = Math.floor(w / cols);
+      const cellH = Math.floor(h / rows);
+
+      resultContainer.innerHTML = '';
+
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const cell = document.createElement('canvas');
+          cell.width = cellW;
+          cell.height = cellH;
+          const ctx = cell.getContext('2d');
+
+          ctx.drawImage(
+            croppedCanvas,
+            c * cellW,
+            r * cellH,
+            cellW,
+            cellH,
+            0,
+            0,
+            cellW,
+            cellH
+          );
+
+          const dataUrl = cell.toDataURL('image/jpeg', 0.95);
+
+          const wrap = document.createElement('div');
+          wrap.className = 'relative bg-black rounded overflow-hidden';
+
+          const img = document.createElement('img');
+          img.src = dataUrl;
+          img.className = 'w-full h-auto';
+
+          const a = document.createElement('a');
+          a.href = dataUrl;
+          a.download = `part_${r + 1}_${c + 1}.jpg`;
+          a.textContent = '下載';
+          a.className =
+            'absolute bottom-1 right-1 bg-cyan-500 text-black text-[10px] px-2 py-0.5 rounded';
+
+          wrap.appendChild(img);
+          wrap.appendChild(a);
+          resultContainer.appendChild(wrap);
+        }
+      }
+    });
+
+    // 返回裁切前
+    document.getElementById('btnBack1').addEventListener('click', () => {
+      if (cropper) {
+        cropper.destroy();
+        cropper = null;
+      }
+      setStep(1);
+    });
+
+    // 重新選擇圖片
+    document.getElementById('btnBack2').addEventListener('click', () => {
+      uploadedDataUrl = null;
+      croppedCanvas = null;
+      previewImage.classList.add('hidden');
+      placeholderText.classList.remove('hidden');
+      btnGoCrop.disabled = true;
+      fileInput.value = '';
+      resultContainer.innerHTML = '';
+      setStep(1);
+    });
+  </script>
 </body>
 </html>
